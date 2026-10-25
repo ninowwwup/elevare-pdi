@@ -184,6 +184,193 @@ function apiDeleteRecord(tableName, id, softDelete) {
 }
 
 /**
+ * Retorna estatísticas reais e consolidadas para alimentar o Dashboard.
+ */
+function apiGetDashboardStats() {
+  try {
+    var hoje = Validation.nowISO().split('T')[0];
+    
+    var metas = Database.listRecords('METAS', { limit: 100 });
+    var acoes = Database.listRecords('ACOES', { limit: 100 });
+    var feedbacks = Database.listRecords('FEEDBACKS', { limit: 20 });
+    var competencias = Database.listRecords('COMPETENCIAS', { limit: 100 });
+    var livros = Database.listRecords('LIVROS', { limit: 50 });
+    var planos = Database.listRecords('PLANOS_PDI', { limit: 20 });
+
+    var metasConcluidas = 0;
+    var metasEmAndamento = 0;
+    var metasAtrasadas = 0;
+
+    for (var m = 0; m < metas.length; m++) {
+      var item = metas[m];
+      if (item.status === 'concluida') {
+        metasConcluidas++;
+      } else if (item.status === 'arquivada' || item.status === 'cancelada') {
+        // Ignora arquivadas
+      } else {
+        metasEmAndamento++;
+        if (item.prazo && item.prazo < hoje) {
+          metasAtrasadas++;
+        }
+      }
+    }
+
+    var acoesPendentes = 0;
+    var acoesAtrasadas = 0;
+    for (var a = 0; a < acoes.length; a++) {
+      var acao = acoes[a];
+      if (acao.status !== 'concluida' && acao.status !== 'cancelada' && acao.status !== 'arquivado') {
+        acoesPendentes++;
+        if (acao.prazo && acao.prazo < hoje) {
+          acoesAtrasadas++;
+        }
+      }
+    }
+
+    var livrosLendo = 0;
+    var livrosConcluidos = 0;
+    for (var l = 0; l < livros.length; l++) {
+      if (livros[l].status === 'lendo') livrosLendo++;
+      if (livros[l].status === 'concluido') livrosConcluidos++;
+    }
+
+    return Security.createSuccessResponse({
+      kpis: {
+        metasConcluidas: metasConcluidas,
+        metasEmAndamento: metasEmAndamento,
+        metasAtrasadas: metasAtrasadas,
+        acoesPendentes: acoesPendentes,
+        acoesAtrasadas: acoesAtrasadas,
+        totalFeedbacks: feedbacks.length,
+        totalCompetencias: competencias.length,
+        totalLivros: livros.length,
+        livrosLendo: livrosLendo,
+        livrosConcluidos: livrosConcluidos,
+        totalPlanosPdi: planos.length
+      },
+      recentFeedbacks: feedbacks.slice(0, 5),
+      priorityMetas: metas.filter(function(m) { return m.status !== 'concluida' && m.status !== 'arquivada'; }).slice(0, 5),
+      recentLivros: livros.slice(0, 8),
+      competencias: competencias.slice(0, 6)
+    });
+  } catch (err) {
+    return Security.createErrorResponse(err);
+  }
+}
+
+/**
+ * Registra uma avaliação histórica e atualiza o nível da competência de forma atômica.
+ */
+function apiAddAvaliacao(avaliacaoData) {
+  try {
+    if (!avaliacaoData || !avaliacaoData.competencia_id || !avaliacaoData.nivel) {
+      throw new Error('Competência e nível são obrigatórios.');
+    }
+    var compId = avaliacaoData.competencia_id;
+    var novoNivel = Number(avaliacaoData.nivel);
+    var hoje = Validation.nowISO().split('T')[0];
+
+    var avaliacaoRecord = Database.insertRecord('AVALIACOES', {
+      competencia_id: compId,
+      data: avaliacaoData.data || hoje,
+      nivel: novoNivel,
+      justificativa: avaliacaoData.justificativa || 'Autoavaliação periódica',
+      evidencias: avaliacaoData.evidencias || '',
+      origem: avaliacaoData.origem || 'Autoavaliação'
+    });
+
+    Database.updateRecord('COMPETENCIAS', compId, {
+      nivel_atual: novoNivel,
+      ultima_avaliacao_data: hoje
+    });
+
+    return Security.createSuccessResponse(avaliacaoRecord, 'Avaliação registrada com sucesso!');
+  } catch (err) {
+    return Security.createErrorResponse(err);
+  }
+}
+
+/**
+ * Transforma um feedback recebido em uma ação prática no plano de ação.
+ */
+function apiConvertFeedbackToAction(feedbackId, acaoData) {
+  try {
+    if (!feedbackId || !acaoData || !acaoData.titulo) {
+      throw new Error('Título da ação é obrigatório.');
+    }
+
+    var novaAcao = Database.insertRecord('ACOES', {
+      titulo: acaoData.titulo,
+      descricao: acaoData.descricao || '',
+      prioridade: acaoData.prioridade || 'alta',
+      prazo: acaoData.prazo || '',
+      status: 'a_fazer',
+      origem_tipo: 'feedback',
+      origem_id: feedbackId,
+      meta_id: acaoData.meta_id || ''
+    });
+
+    Database.updateRecord('FEEDBACKS', feedbackId, {
+      status: 'em_acompanhamento'
+    });
+
+    return Security.createSuccessResponse(novaAcao, 'Ação de desenvolvimento criada com sucesso a partir do feedback!');
+  } catch (err) {
+    return Security.createErrorResponse(err);
+  }
+}
+
+/**
+ * Registra sessão de leitura e atualiza o progresso do livro.
+ */
+function apiUpdateLivroLeitura(leituraData) {
+  try {
+    if (!leituraData || !leituraData.livro_id || leituraData.pagina_final === undefined) {
+      throw new Error('ID do livro e página final são obrigatórios.');
+    }
+    var livroId = leituraData.livro_id;
+    var pagFinal = Number(leituraData.pagina_final);
+    var pagLidas = Number(leituraData.paginas_lidas) || 0;
+    var hoje = Validation.nowISO().split('T')[0];
+
+    Database.insertRecord('LEITURAS', {
+      livro_id: livroId,
+      data: hoje,
+      paginas_lidas: pagLidas,
+      pagina_final: pagFinal,
+      duracao_minutos: Number(leituraData.duracao_minutos) || 0,
+      notas_sessao: leituraData.notas_sessao || ''
+    });
+
+    var livro = Database.getRecordById('LIVROS', livroId);
+    if (!livro) throw new Error('Livro não encontrado.');
+
+    var totalPags = Number(livro.total_paginas) || 1;
+    var percentual = Math.min(100, Math.round((pagFinal / totalPags) * 100));
+
+    var updates = {
+      pagina_atual: pagFinal,
+      percentual_leitura: percentual
+    };
+
+    if (pagFinal >= totalPags) {
+      updates.status = 'concluido';
+      updates.estante = 'concluidos';
+      updates.data_conclusao = hoje;
+    } else if (pagFinal > 0 && livro.status === 'quero_ler') {
+      updates.status = 'lendo';
+      updates.estante = 'lendo_agora';
+      updates.data_inicio = livro.data_inicio || hoje;
+    }
+
+    var livroAtualizado = Database.updateRecord('LIVROS', livroId, updates);
+    return Security.createSuccessResponse(livroAtualizado, 'Progresso de leitura registrado!');
+  } catch (err) {
+    return Security.createErrorResponse(err);
+  }
+}
+
+/**
  * Executa uma verificação real de ponta a ponta da persistência no Google Sheets (Legado).
  */
 function apiRunPersistenceTest(testNote) {

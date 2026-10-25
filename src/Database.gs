@@ -7,8 +7,26 @@ var Database = (function () {
   var PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
   var LOCK_TIMEOUT_MS = 30000; // 30 segundos
 
-  // Definição dos cabeçalhos explícitos de cada uma das 15 abas iniciais
+  // Definição dos cabeçalhos explícitos de cada uma das abas do sistema
   var TABLE_SCHEMAS = {
+    PLANOS_PDI: [
+      'id',
+      'titulo',
+      'objetivo_profissional',
+      'descricao',
+      'cargo_desejado',
+      'pontos_fortes',
+      'oportunidades_melhoria',
+      'competencias_relacionadas',
+      'data_inicio',
+      'prazo_final',
+      'status',
+      'indicadores_sucesso',
+      'observacoes',
+      'custom_fields',
+      'created_at',
+      'updated_at'
+    ],
     CONFIG: [
       'chave',
       'valor',
@@ -480,6 +498,31 @@ var Database = (function () {
   }
 
   /**
+   * Garante que uma tabela permitida exista na planilha com seus cabeçalhos formatados.
+   * Não apaga dados existentes.
+   * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss Planilha
+   * @param {string} tableName Nome da tabela
+   * @return {GoogleAppsScript.Spreadsheet.Sheet}
+   */
+  function ensureTable(ss, tableName) {
+    var sheet = ss.getSheetByName(tableName);
+    if (!sheet) {
+      var expectedHeaders = TABLE_SCHEMAS[tableName];
+      if (!expectedHeaders) {
+        throw new Error('Esquema não encontrado para tabela ' + tableName);
+      }
+      sheet = ss.insertSheet(tableName);
+      sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+      var headerRange = sheet.getRange(1, 1, 1, expectedHeaders.length);
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#1e293b');
+      headerRange.setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    }
+    return sheet;
+  }
+
+  /**
    * Insere um novo registro na tabela indicada.
    * @param {string} tableName Nome da tabela
    * @param {Object} record Objeto contendo os campos
@@ -500,7 +543,7 @@ var Database = (function () {
       var ss = getSpreadsheet();
       var sheet = ss.getSheetByName(validTable);
       if (!sheet) {
-        throw new Error('Aba ' + validTable + ' não existe na planilha.');
+        sheet = ensureTable(ss, validTable);
       }
 
       var headerData = getHeaderMap(sheet);

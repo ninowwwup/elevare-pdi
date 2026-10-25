@@ -41,6 +41,7 @@ var Validation = (function () {
    * Validações de campos obrigatórios por tabela.
    */
   var REQUIRED_FIELDS = {
+    PLANOS_PDI: ['titulo', 'objetivo_profissional', 'status'],
     CONFIG: ['chave', 'valor'],
     MODULOS: ['id', 'nome', 'ativo', 'ordem'],
     CAMPOS_CUSTOM: ['modulo_id', 'campo_nome', 'campo_chave', 'tipo'],

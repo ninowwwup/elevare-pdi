@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Elevare PDI — Personal Development Hub</title>
-  <!-- Estilos e Design System (Fase 2) -->
+  <!-- Estilos e Design System (Fases 2 e 3) -->
   <?!= include('Styles'); ?>
 </head>
 <body data-theme="dark">
@@ -34,10 +34,10 @@
         </button>
       </div>
 
-      <!-- Links de Navegação -->
+      <!-- Links de Navegação da Sidebar -->
       <nav class="sidebar-nav">
         <div class="nav-group-label">Principal</div>
-        <a class="nav-link active" data-tab="tab-dashboard" id="nav-dashboard">
+        <a class="nav-link active" data-pane="pane-dashboard" id="nav-dashboard">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="9"></rect>
@@ -50,7 +50,7 @@
         </a>
 
         <div class="nav-group-label">Desenvolvimento</div>
-        <a class="nav-link" data-tab="tab-dashboard" id="nav-pdi">
+        <a class="nav-link" data-pane="pane-pdi" id="nav-pdi">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -60,7 +60,7 @@
           <span class="nav-link-text">Meu PDI</span>
         </a>
 
-        <a class="nav-link" data-tab="tab-dashboard" id="nav-skills">
+        <a class="nav-link" data-pane="pane-skills" id="nav-skills">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
@@ -69,7 +69,7 @@
           <span class="nav-link-text">Competências</span>
         </a>
 
-        <a class="nav-link" data-tab="tab-dashboard" id="nav-metas">
+        <a class="nav-link" data-pane="pane-metas" id="nav-metas">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -80,7 +80,7 @@
           <span class="nav-link-text">Metas & Ações</span>
         </a>
 
-        <a class="nav-link" data-tab="tab-dashboard" id="nav-feedbacks">
+        <a class="nav-link" data-pane="pane-feedbacks" id="nav-feedbacks">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -89,7 +89,7 @@
           <span class="nav-link-text">Feedbacks</span>
         </a>
 
-        <a class="nav-link" data-tab="tab-dashboard" id="nav-biblioteca">
+        <a class="nav-link" data-pane="pane-biblioteca" id="nav-biblioteca">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -100,7 +100,7 @@
         </a>
 
         <div class="nav-group-label">Sistema</div>
-        <a class="nav-link" data-tab="tab-database" id="nav-database">
+        <a class="nav-link" data-pane="pane-database" id="nav-database">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
@@ -113,8 +113,8 @@
       </nav>
 
       <div class="sidebar-footer">
-        <span>Fase 2: Design System</span>
-        <span class="badge badge-violet">v1.1.0</span>
+        <span>Fase 3: Funcionalidades Reais</span>
+        <span class="badge badge-violet">v1.2.0</span>
       </div>
     </aside>
 
@@ -138,7 +138,7 @@
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
             </span>
-            <input type="text" class="search-input" placeholder="Pesquisar no PDI... (Ctrl+K)" id="global-search-input" />
+            <input type="text" class="search-input" placeholder="Pesquisar registros... (Ctrl+K)" id="global-search-input" />
           </div>
         </div>
 
@@ -169,32 +169,21 @@
 
       <!-- Conteúdo da Página -->
       <main class="page-content">
-        <!-- Navegação entre Visões (Tabs) -->
-        <div class="view-tabs">
-          <button class="view-tab active" data-target="tab-dashboard" id="tab-btn-dashboard">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="9"></rect>
-              <rect x="14" y="3" width="7" height="5"></rect>
-              <rect x="14" y="12" width="7" height="9"></rect>
-              <rect x="3" y="16" width="7" height="5"></rect>
-            </svg>
-            <span>Visão Geral & Dashboard</span>
-          </button>
-          <button class="view-tab" data-target="tab-database" id="tab-btn-database">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-            </svg>
-            <span>Diagnóstico do Banco & Persistência (Fase 1)</span>
-          </button>
+        <!-- Navegação Superior entre Visões (Tabs Rápidas) -->
+        <div class="view-tabs" style="overflow-x: auto; white-space: nowrap;">
+          <button class="view-tab active" data-pane="pane-dashboard" id="tab-btn-dashboard">Dashboard</button>
+          <button class="view-tab" data-pane="pane-pdi" id="tab-btn-pdi">Meu PDI</button>
+          <button class="view-tab" data-pane="pane-skills" id="tab-btn-skills">Competências</button>
+          <button class="view-tab" data-pane="pane-metas" id="tab-btn-metas">Metas & Ações</button>
+          <button class="view-tab" data-pane="pane-feedbacks" id="tab-btn-feedbacks">Feedbacks</button>
+          <button class="view-tab" data-pane="pane-biblioteca" id="tab-btn-biblioteca">Biblioteca 3D</button>
+          <button class="view-tab" data-pane="pane-database" id="tab-btn-database">Banco & Persistência</button>
         </div>
 
         <!-- ================================================================
-             ABA 1: DASHBOARD GERAL
+             1. ABA: DASHBOARD GERAL
              ================================================================ -->
         <div class="tab-pane active" id="pane-dashboard">
-          <!-- Hero Banner -->
           <div class="hero-banner">
             <div>
               <h1 class="hero-greeting" id="hero-greeting-text">Olá! Bem-vindo ao seu PDI</h1>
@@ -207,7 +196,7 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
                 </svg>
-                <span>Atualizar</span>
+                <span>Atualizar Dashboard</span>
               </button>
             </div>
           </div>
@@ -233,7 +222,7 @@
                 </div>
               </div>
               <div class="kpi-value" id="kpi-metas-andamento">0</div>
-              <div class="kpi-subtext">Ações com prazos ativos</div>
+              <div class="kpi-subtext">Metas com ações em desenvolvimento</div>
             </div>
 
             <div class="kpi-card">
@@ -244,7 +233,7 @@
                 </div>
               </div>
               <div class="kpi-value" id="kpi-feedbacks-total">0</div>
-              <div class="kpi-subtext">Alinhamentos documentados</div>
+              <div class="kpi-subtext">Retornos e alinhamentos registrados</div>
             </div>
 
             <div class="kpi-card">
@@ -255,11 +244,11 @@
                 </div>
               </div>
               <div class="kpi-value" id="kpi-livros-total">0</div>
-              <div class="kpi-subtext">Leituras cadastradas</div>
+              <div class="kpi-subtext">Leituras registradas no acervo</div>
             </div>
           </div>
 
-          <!-- Layout 2 Colunas para Widgets -->
+          <!-- Widgets do Dashboard -->
           <div class="grid-two-col">
             <!-- Widget: Metas Prioritárias -->
             <div class="content-card">
@@ -268,7 +257,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
                   <span>Metas & Ações Prioritárias</span>
                 </h2>
-                <button class="btn btn-outline btn-sm" onclick="UI.openModal('modal-quick-create')">+ Nova Meta</button>
+                <button class="btn btn-outline btn-sm" onclick="App.openCreateMetaModal()">+ Nova Meta</button>
               </div>
               <div id="dash-metas-container">
                 <div class="empty-state">
@@ -276,8 +265,8 @@
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   </div>
                   <div class="empty-state-title">Nenhuma meta cadastrada</div>
-                  <div class="empty-state-desc">Defina metas SMART para direcionar seu crescimento profissional com clareza.</div>
-                  <button class="btn btn-secondary btn-sm" onclick="UI.openModal('modal-quick-create')">Cadastrar Primeira Meta</button>
+                  <div class="empty-state-desc">Defina metas SMART para direcionar seu crescimento profissional.</div>
+                  <button class="btn btn-secondary btn-sm" onclick="App.openCreateMetaModal()">Cadastrar Primeira Meta</button>
                 </div>
               </div>
             </div>
@@ -289,7 +278,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                   <span>Feedbacks Recentes</span>
                 </h2>
-                <button class="btn btn-outline btn-sm" onclick="UI.openModal('modal-quick-create')">+ Novo Feedback</button>
+                <button class="btn btn-outline btn-sm" onclick="App.openCreateFeedbackModal()">+ Novo Feedback</button>
               </div>
               <div id="dash-feedbacks-container">
                 <div class="empty-state">
@@ -297,8 +286,8 @@
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                   </div>
                   <div class="empty-state-title">Nenhum feedback registrado</div>
-                  <div class="empty-state-desc">Registre retornos da liderança ou autoavaliações para transformá-los em ações.</div>
-                  <button class="btn btn-secondary btn-sm" onclick="UI.openModal('modal-quick-create')">Registrar Primeiro Feedback</button>
+                  <div class="empty-state-desc">Registre retornos recebidos para transformá-los em ações concretas.</div>
+                  <button class="btn btn-secondary btn-sm" onclick="App.openCreateFeedbackModal()">Registrar Primeiro Feedback</button>
                 </div>
               </div>
             </div>
@@ -306,7 +295,225 @@
         </div>
 
         <!-- ================================================================
-             ABA 2: DIAGNÓSTICO DO BANCO DE DADOS & PERSISTÊNCIA (FASE 1)
+             2. ABA: MEU PDI
+             ================================================================ -->
+        <div class="tab-pane" id="pane-pdi" style="display: none;">
+          <div class="module-header">
+            <div class="module-title-group">
+              <h1>Meu Plano de Desenvolvimento Individual</h1>
+              <p>Estruture seus ciclos de carreira, cargos desejados, forças, oportunidades de melhoria e acompanhe os indicadores de sucesso.</p>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="App.openCreatePdiModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Novo Plano PDI</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtros de Pesquisa do PDI -->
+          <div class="filter-toolbar">
+            <input type="text" class="filter-search" id="pdi-search-input" placeholder="Pesquisar por título, cargo ou objetivo..." oninput="App.filterPdiList()" />
+            <select class="filter-select" id="pdi-filter-status" onchange="App.filterPdiList()">
+              <option value="todos">Todos os Status</option>
+              <option value="ativo">Ativo</option>
+              <option value="em_revisao">Em Revisão</option>
+              <option value="concluido">Concluído</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadPdiList()">Recarregar</button>
+          </div>
+
+          <!-- Lista de Planos PDI -->
+          <div id="pdi-list-container">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- ================================================================
+             3. ABA: COMPETÊNCIAS
+             ================================================================ -->
+        <div class="tab-pane" id="pane-skills" style="display: none;">
+          <div class="module-header">
+            <div class="module-title-group">
+              <h1>Matriz de Competências & Avaliações</h1>
+              <p>Mapeie Hard e Soft Skills, identifique lacunas (gaps) entre o nível atual e o desejado e mantenha o histórico sem sobrescrever avaliações anteriores.</p>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="App.openCreateSkillModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Nova Competência</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Guia de Níveis da Escala 1 a 5 -->
+          <div class="level-scale-guide">
+            <strong>Escala Oficial de Proficiência (1 a 5):</strong><br>
+            <span style="display: inline-block; margin-right: 1.25rem;"><strong>1 — Básico:</strong> Conhecimento conceitual, necessita de supervisão direta.</span>
+            <span style="display: inline-block; margin-right: 1.25rem;"><strong>2 — Em Prática:</strong> Aplica em tarefas rotineiras com orientação pontual.</span>
+            <span style="display: inline-block; margin-right: 1.25rem;"><strong>3 — Autônomo:</strong> Executa com autonomia, consistência e boa qualidade.</span>
+            <span style="display: inline-block; margin-right: 1.25rem;"><strong>4 — Avançado:</strong> Domínio aprofundado, resolve problemas complexos e orienta colegas.</span>
+            <span style="display: inline-block;"><strong>5 — Especialista:</strong> Referência técnica ou comportamental, define padrões e inova.</span>
+          </div>
+
+          <!-- Filtros de Competências -->
+          <div class="filter-toolbar">
+            <input type="text" class="filter-search" id="skills-search-input" placeholder="Pesquisar por competência ou categoria..." oninput="App.filterSkillsList()" />
+            <select class="filter-select" id="skills-filter-tipo" onchange="App.filterSkillsList()">
+              <option value="todos">Todos os Tipos</option>
+              <option value="hard_skill">Hard Skills (Técnicas)</option>
+              <option value="soft_skill">Soft Skills (Comportamentais)</option>
+            </select>
+            <select class="filter-select" id="skills-filter-gap" onchange="App.filterSkillsList()">
+              <option value="todos">Todos os Níveis</option>
+              <option value="com_gap">Com Lacuna (Gap > 0)</option>
+              <option value="sem_gap">Meta Atingida (Gap = 0)</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadSkillsList()">Recarregar</button>
+          </div>
+
+          <!-- Grid de Cards de Competências -->
+          <div id="skills-list-container" class="cards-masonry">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- ================================================================
+             4. ABA: METAS & AÇÕES
+             ================================================================ -->
+        <div class="tab-pane" id="pane-metas" style="display: none;">
+          <div class="module-header">
+            <div class="module-title-group">
+              <h1>Metas SMART & Ações de Desenvolvimento</h1>
+              <p>Defina metas claras com ações práticas vinculadas. O progresso é calculado automaticamente com base no cumprimento das ações.</p>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="App.openCreateMetaModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Nova Meta SMART</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Banner dinâmico de alertas de prazos -->
+          <div id="metas-alert-banner" style="display: none;" class="alert-banner">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <span id="metas-alert-text">Existem metas ou ações atrasadas que requerem sua atenção.</span>
+            </div>
+          </div>
+
+          <!-- Filtros de Metas -->
+          <div class="filter-toolbar">
+            <input type="text" class="filter-search" id="metas-search-input" placeholder="Pesquisar metas ou ações vinculadas..." oninput="App.filterMetasList()" />
+            <select class="filter-select" id="metas-filter-status" onchange="App.filterMetasList()">
+              <option value="todos">Todos os Status</option>
+              <option value="em_andamento">Em Andamento</option>
+              <option value="concluida">Concluída</option>
+              <option value="planejada">Planejada</option>
+              <option value="atrasada">Atrasadas</option>
+            </select>
+            <select class="filter-select" id="metas-filter-prioridade" onchange="App.filterMetasList()">
+              <option value="todos">Todas as Prioridades</option>
+              <option value="alta">Alta</option>
+              <option value="media">Média</option>
+              <option value="baixa">Baixa</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadMetasList()">Recarregar</button>
+          </div>
+
+          <!-- Lista de Metas e Ações -->
+          <div id="metas-list-container">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- ================================================================
+             5. ABA: FEEDBACKS
+             ================================================================ -->
+        <div class="tab-pane" id="pane-feedbacks" style="display: none;">
+          <div class="module-header">
+            <div class="module-title-group">
+              <h1>Histórico de Feedbacks & Alinhamentos</h1>
+              <p>Mantenha registro transparente dos feedbacks recebidos de líderes, pares e autoavaliações, convertendo-os diretamente em ações práticas no PDI.</p>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="App.openCreateFeedbackModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Registrar Feedback</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtros de Feedbacks -->
+          <div class="filter-toolbar">
+            <input type="text" class="filter-search" id="feedbacks-search-input" placeholder="Pesquisar por título, contexto ou temas..." oninput="App.filterFeedbacksList()" />
+            <select class="filter-select" id="feedbacks-filter-status" onchange="App.filterFeedbacksList()">
+              <option value="todos">Todos os Status</option>
+              <option value="novo">Novo</option>
+              <option value="em_acompanhamento">Em Acompanhamento</option>
+              <option value="implementado">Implementado</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadFeedbacksList()">Recarregar</button>
+          </div>
+
+          <!-- Lista de Feedbacks -->
+          <div id="feedbacks-list-container">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- ================================================================
+             6. ABA: BIBLIOTECA 3D
+             ================================================================ -->
+        <div class="tab-pane" id="pane-biblioteca" style="display: none;">
+          <div class="module-header">
+            <div class="module-title-group">
+              <h1>Biblioteca 3D & Hub de Leituras</h1>
+              <p>Sua estante virtual interativa com visualização tridimensional de livros, acompanhamento de páginas lidas, percentual e anotações de aprendizado.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <!-- Alternador Estante 3D vs Lista -->
+              <div style="display: flex; background: var(--bg-surface-elevated); padding: 0.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-medium);">
+                <button class="btn btn-sm" id="btn-view-books-3d" style="background: var(--accent-violet); color: #fff;" onclick="App.setBookshelfView('3d')">Estante 3D</button>
+                <button class="btn btn-sm" id="btn-view-books-list" style="background: transparent; color: var(--text-secondary);" onclick="App.setBookshelfView('list')">Tabela</button>
+              </div>
+
+              <button class="btn btn-primary" onclick="App.openCreateLivroModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Adicionar Livro</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtros da Biblioteca -->
+          <div class="filter-toolbar">
+            <input type="text" class="filter-search" id="livros-search-input" placeholder="Pesquisar por título, autor ou categoria..." oninput="App.filterLivrosList()" />
+            <select class="filter-select" id="livros-filter-estante" onchange="App.filterLivrosList()">
+              <option value="todos">Todas as Estantes</option>
+              <option value="lendo_agora">Lendo Agora</option>
+              <option value="quero_ler">Quero Ler</option>
+              <option value="concluidos">Concluídos</option>
+              <option value="favoritos">Favoritos ⭐</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadLivrosList()">Recarregar</button>
+          </div>
+
+          <!-- Visualização 1: Estante 3D -->
+          <div id="bookshelf-view-3d" class="bookshelf-stage">
+            <!-- Estantes 3D geradas dinamicamente via JS -->
+          </div>
+
+          <!-- Visualização 2: Lista Tradicional (Oculta por padrão) -->
+          <div id="bookshelf-view-list" style="display: none;">
+            <div id="livros-list-container" class="cards-masonry"></div>
+          </div>
+        </div>
+
+        <!-- ================================================================
+             7. ABA: DIAGNÓSTICO DO BANCO & PERSISTÊNCIA (FASE 1)
              ================================================================ -->
         <div class="tab-pane" id="pane-database" style="display: none;">
           <!-- Banner de Não Configurado se aplicável -->
@@ -317,7 +524,7 @@
                   Instalação Inicial do Banco Necessária
                 </h2>
                 <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 720px; line-height: 1.6;">
-                  A planilha ainda não foi vinculada. Clique abaixo para executar o provisionamento automático das 15 abas estruturadas no seu Google Drive.
+                  A planilha ainda não foi vinculada. Clique abaixo para executar o provisionamento automático das abas estruturadas no seu Google Drive.
                 </p>
               </div>
               <button class="btn btn-primary" id="btn-setup-db">
@@ -362,9 +569,9 @@
             </div>
           </div>
 
-          <!-- Grid com Tabela das 15 Abas e Bateria dos 7 Testes -->
+          <!-- Grid com Tabela das Abas e Bateria dos 7 Testes -->
           <div class="grid-two-col">
-            <!-- Tabela das 15 Abas -->
+            <!-- Tabela das Abas -->
             <div class="content-card">
               <div class="content-card-header">
                 <div>
@@ -401,7 +608,7 @@
 
               <div class="form-group">
                 <label class="form-label">Nota do Teste (opcional):</label>
-                <input type="text" id="test-note-input" class="form-control" placeholder="Ex: Validação automatizada Fase 2" />
+                <input type="text" id="test-note-input" class="form-control" placeholder="Ex: Validação automatizada Fase 3" />
               </div>
 
               <button class="btn btn-primary" id="btn-test-persistence" style="width: 100%; margin-bottom: 1.25rem;">
@@ -426,12 +633,12 @@
   </div>
 
   <!-- ================================================================
-       MODAL: CRIAR REGISTRO RÁPIDO
+       MODAL 1: CRIAR REGISTRO RÁPIDO
        ================================================================ -->
   <div class="modal-overlay" id="modal-quick-create">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 class="modal-title">Novo Registro no PDI</h3>
+        <h3 class="modal-title">Novo Registro Rápido</h3>
         <button class="modal-close" onclick="UI.closeModal('modal-quick-create')">&times;</button>
       </div>
       <div class="modal-body">
@@ -439,17 +646,18 @@
           <div class="form-group">
             <label class="form-label">Módulo de Destino:</label>
             <select class="form-control" id="quick-target-module">
-              <option value="METAS">Metas SMART (METAS)</option>
-              <option value="ACOES">Ações de Desenvolvimento (ACOES)</option>
+              <option value="PLANOS_PDI">Plano PDI (PLANOS_PDI)</option>
+              <option value="COMPETENCIAS">Competência (COMPETENCIAS)</option>
+              <option value="METAS">Meta SMART (METAS)</option>
+              <option value="ACOES">Ação de Desenvolvimento (ACOES)</option>
               <option value="FEEDBACKS">Feedback Recebido (FEEDBACKS)</option>
-              <option value="COMPETENCIAS">Nova Competência (COMPETENCIAS)</option>
               <option value="LIVROS">Livro / Leitura (LIVROS)</option>
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label">Título / Nome *</label>
-            <input type="text" class="form-control" id="quick-title" placeholder="Ex: Estudar Arquitetura Cloud" required />
+            <input type="text" class="form-control" id="quick-title" placeholder="Ex: Arquitetura de Software" required />
           </div>
 
           <div class="form-group">
@@ -465,10 +673,685 @@
     </div>
   </div>
 
-  <!-- Container Global de Notificações Toast -->
+  <!-- ================================================================
+       MODAL 2: FORMULÁRIO DE PLANO PDI
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-pdi-form">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="pdi-modal-title">Novo Plano de Desenvolvimento Individual</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-pdi-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-pdi" onsubmit="return false;">
+          <input type="hidden" id="pdi-field-id" value="" />
+
+          <div class="form-group">
+            <label class="form-label">Título do PDI *</label>
+            <input type="text" class="form-control" id="pdi-field-titulo" placeholder="Ex: Ciclo 2026 — Transição para Liderança Técnica" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Cargo ou Área Desejada *</label>
+              <input type="text" class="form-control" id="pdi-field-cargo" placeholder="Ex: Tech Lead / Arquiteto Sênior" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-control" id="pdi-field-status">
+                <option value="ativo">Ativo</option>
+                <option value="em_revisao">Em Revisão</option>
+                <option value="concluido">Concluído</option>
+                <option value="arquivado">Arquivado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Objetivo Profissional Estratégico *</label>
+            <textarea class="form-control" id="pdi-field-objetivo" rows="2" placeholder="O que você quer alcançar profissionalmente neste ciclo?" required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Pontos Fortes (Forças)</label>
+              <textarea class="form-control" id="pdi-field-pontos-fortes" rows="2" placeholder="Ex: Resolução de problemas, arquitetura, clareza técnica..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Oportunidades de Melhoria (Gaps)</label>
+              <textarea class="form-control" id="pdi-field-melhorias" rows="2" placeholder="Ex: Negociação com stakeholders, delegação..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Data de Início</label>
+              <input type="date" class="form-control" id="pdi-field-inicio" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prazo Final</label>
+              <input type="date" class="form-control" id="pdi-field-prazo" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Indicadores de Sucesso</label>
+            <input type="text" class="form-control" id="pdi-field-indicadores" placeholder="Ex: 100% das certificações concluídas, feedback satisfatório da diretoria" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Observações Gerais</label>
+            <textarea class="form-control" id="pdi-field-observacoes" rows="2" placeholder="Anotações de acompanhamento..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-pdi-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-pdi" onclick="App.savePdiRecord()">Salvar Plano PDI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 3: FORMULÁRIO DE COMPETÊNCIA
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-skill-form">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="skill-modal-title">Nova Competência</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-skill-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-skill" onsubmit="return false;">
+          <input type="hidden" id="skill-field-id" value="" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nome da Competência *</label>
+              <input type="text" class="form-control" id="skill-field-nome" placeholder="Ex: Arquitetura de Microsserviços" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo *</label>
+              <select class="form-control" id="skill-field-tipo">
+                <option value="hard_skill">Hard Skill (Técnica)</option>
+                <option value="soft_skill">Soft Skill (Comportamental)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Categoria</label>
+              <input type="text" class="form-control" id="skill-field-categoria" placeholder="Ex: Engenharia de Software, Gestão, Comunicação" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prioridade / Importância</label>
+              <select class="form-control" id="skill-field-importancia">
+                <option value="alta">Alta Prioridade</option>
+                <option value="media">Média Prioridade</option>
+                <option value="baixa">Baixa Prioridade</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nível Atual (1 a 5) *</label>
+              <select class="form-control" id="skill-field-nivel-atual">
+                <option value="1">1 — Básico / Teórico</option>
+                <option value="2">2 — Em Prática / Inicial</option>
+                <option value="3" selected>3 — Autônomo / Competente</option>
+                <option value="4">4 — Avançado / Domínio Alto</option>
+                <option value="5">5 — Especialista / Referência</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nível Desejado (Alvo 1 a 5) *</label>
+              <select class="form-control" id="skill-field-nivel-desejado">
+                <option value="1">1 — Básico</option>
+                <option value="2">2 — Em Prática</option>
+                <option value="3">3 — Autônomo</option>
+                <option value="4">4 — Avançado</option>
+                <option value="5" selected>5 — Especialista</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-control" id="skill-field-descricao" rows="2" placeholder="O que abrange esta competência e por que é relevante?"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Plano de Desenvolvimento / Meta de Evolução</label>
+            <textarea class="form-control" id="skill-field-meta-desenvolvimento" rows="2" placeholder="Ações ou cursos que farão você evoluir de nível..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-skill-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-skill" onclick="App.saveSkillRecord()">Salvar Competência</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 4: AVALIAR COMPETÊNCIA (HISTÓRICO EM AVALIACOES)
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-skill-evaluate">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Avaliar Competência</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-skill-evaluate')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-evaluate" onsubmit="return false;">
+          <input type="hidden" id="eval-field-comp-id" value="" />
+
+          <div style="margin-bottom: 1rem;">
+            <span class="badge badge-violet" id="eval-comp-name">Nome da Competência</span>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.35rem;" id="eval-comp-current">Nível Atual: 3 &bull; Desejado: 5</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Novo Nível Avaliado (1 a 5) *</label>
+            <div class="level-radio-group">
+              <label class="level-radio-btn" onclick="App.selectEvalLevel(1)">
+                <input type="radio" name="eval_nivel" value="1" />
+                <span class="level-num">1</span>
+                <span class="level-desc-text">Básico</span>
+              </label>
+              <label class="level-radio-btn" onclick="App.selectEvalLevel(2)">
+                <input type="radio" name="eval_nivel" value="2" />
+                <span class="level-num">2</span>
+                <span class="level-desc-text">Prática</span>
+              </label>
+              <label class="level-radio-btn selected" onclick="App.selectEvalLevel(3)">
+                <input type="radio" name="eval_nivel" value="3" checked />
+                <span class="level-num">3</span>
+                <span class="level-desc-text">Autônomo</span>
+              </label>
+              <label class="level-radio-btn" onclick="App.selectEvalLevel(4)">
+                <input type="radio" name="eval_nivel" value="4" />
+                <span class="level-num">4</span>
+                <span class="level-desc-text">Avançado</span>
+              </label>
+              <label class="level-radio-btn" onclick="App.selectEvalLevel(5)">
+                <input type="radio" name="eval_nivel" value="5" />
+                <span class="level-num">5</span>
+                <span class="level-desc-text">Especialista</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Justificativa da Avaliação *</label>
+            <textarea class="form-control" id="eval-field-justificativa" rows="2" placeholder="O que motivou a mudança ou manutenção de nível?" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Evidências / Entregas Realizadas</label>
+            <textarea class="form-control" id="eval-field-evidencias" rows="2" placeholder="Projetos, feedbacks ou resultados práticos..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-skill-evaluate')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-evaluation" onclick="App.saveEvaluationRecord()">Gravar Avaliação Histórica</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 5: FORMULÁRIO DE META SMART
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-meta-form">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="meta-modal-title">Nova Meta SMART</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-meta-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-meta" onsubmit="return false;">
+          <input type="hidden" id="meta-field-id" value="" />
+
+          <div class="form-group">
+            <label class="form-label">Título da Meta *</label>
+            <input type="text" class="form-control" id="meta-field-titulo" placeholder="Ex: Obter Certificação AWS Solutions Architect Associate" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Categoria / Objetivo Estratégico</label>
+              <input type="text" class="form-control" id="meta-field-objetivo" placeholder="Ex: Nuvem & Infraestrutura" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prioridade</label>
+              <select class="form-control" id="meta-field-prioridade">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Data de Início</label>
+              <input type="date" class="form-control" id="meta-field-inicio" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prazo Final *</label>
+              <input type="date" class="form-control" id="meta-field-prazo" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-control" id="meta-field-status">
+                <option value="em_andamento" selected>Em Andamento</option>
+                <option value="planejada">Planejada</option>
+                <option value="concluida">Concluída</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Indicador de Sucesso</label>
+              <input type="text" class="form-control" id="meta-field-indicador" placeholder="Ex: Aprovação no exame com score >= 75%" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Resultado Esperado</label>
+            <textarea class="form-control" id="meta-field-resultado" rows="2" placeholder="Qual o impacto concreto ao alcançar esta meta?"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descrição Detalhada</label>
+            <textarea class="form-control" id="meta-field-descricao" rows="2" placeholder="Contexto, recursos necessários ou critérios adicionais..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-meta-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-meta" onclick="App.saveMetaRecord()">Salvar Meta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 6: FORMULÁRIO DE AÇÃO VINCULADA
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-acao-form">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Adicionar Ação à Meta</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-acao-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-acao" onsubmit="return false;">
+          <input type="hidden" id="acao-field-meta-id" value="" />
+          <input type="hidden" id="acao-field-id" value="" />
+
+          <div class="form-group">
+            <label class="form-label">Título da Ação *</label>
+            <input type="text" class="form-control" id="acao-field-titulo" placeholder="Ex: Realizar simulados 1 e 2 no Udemy" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Prazo de Conclusão</label>
+              <input type="date" class="form-control" id="acao-field-prazo" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prioridade</label>
+              <select class="form-control" id="acao-field-prioridade">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-control" id="acao-field-status">
+              <option value="a_fazer" selected>A Fazer</option>
+              <option value="em_progresso">Em Progresso</option>
+              <option value="concluida">Concluída</option>
+              <option value="impedimento">Impedimento</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descrição / Evidência Esperada</label>
+            <textarea class="form-control" id="acao-field-descricao" rows="2" placeholder="O que deve ser demonstrado ao concluir?"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-acao-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-acao" onclick="App.saveAcaoRecord()">Salvar Ação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 7: FORMULÁRIO DE FEEDBACK
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-feedback-form">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="feedback-modal-title">Registrar Feedback</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-feedback-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-feedback" onsubmit="return false;">
+          <input type="hidden" id="feedback-field-id" value="" />
+
+          <div class="form-group">
+            <label class="form-label">Título / Assunto *</label>
+            <input type="text" class="form-control" id="feedback-field-titulo" placeholder="Ex: Feedback 1:1 Trimestral — Performance e Liderança" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Origem / Autor *</label>
+              <input type="text" class="form-control" id="feedback-field-origem" placeholder="Ex: Gestor Direto, Par, Autoavaliação" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data *</label>
+              <input type="date" class="form-control" id="feedback-field-data" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-control" id="feedback-field-status">
+                <option value="novo" selected>Novo</option>
+                <option value="em_acompanhamento">Em Acompanhamento</option>
+                <option value="implementado">Implementado</option>
+                <option value="arquivado">Arquivado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prioridade</label>
+              <select class="form-control" id="feedback-field-prioridade">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Contexto do Feedback</label>
+            <input type="text" class="form-control" id="feedback-field-contexto" placeholder="Ex: Entrega do Projeto X, Reunião de alinhamento estratégico..." />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" style="color: var(--status-success);">Pontos Fortes (Reconhecimento)</label>
+              <textarea class="form-control" id="feedback-field-pontos-fortes" rows="2" placeholder="O que foi elogiado e deve ser mantido?"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="color: #f59e0b;">Oportunidades de Melhoria</label>
+              <textarea class="form-control" id="feedback-field-melhorias" rows="2" placeholder="O que precisa ser desenvolvido ou ajustado?"></textarea>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ações Acordadas / Plano de Desenvolvimento</label>
+            <textarea class="form-control" id="feedback-field-acoes" rows="2" placeholder="Compromissos estabelecidos entre as partes..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Prazo de Acompanhamento (Follow-up)</label>
+            <input type="date" class="form-control" id="feedback-field-prazo" />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-feedback-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-feedback" onclick="App.saveFeedbackRecord()">Salvar Feedback</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 8: CONVERTER FEEDBACK EM AÇÃO PRÁTICA
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-feedback-convert">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Transformar Feedback em Ação</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-feedback-convert')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-convert-feedback" onsubmit="return false;">
+          <input type="hidden" id="convert-feedback-id" value="" />
+
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Crie uma ação executável vinculada a este feedback. O status do feedback mudará automaticamente para <strong>Em Acompanhamento</strong>.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Título da Ação de Desenvolvimento *</label>
+            <input type="text" class="form-control" id="convert-field-titulo" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Prazo para Concluir</label>
+              <input type="date" class="form-control" id="convert-field-prazo" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prioridade</label>
+              <select class="form-control" id="convert-field-prioridade">
+                <option value="alta" selected>Alta</option>
+                <option value="media">Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Vincular à Meta SMART (Opcional):</label>
+            <select class="form-control" id="convert-field-meta-id">
+              <option value="">Ação Avulsa (Sem meta vinculada)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Detalhes da Execução</label>
+            <textarea class="form-control" id="convert-field-descricao" rows="2" placeholder="Passo a passo para implementar o retorno recebido..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-feedback-convert')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-convert-feedback" onclick="App.confirmConvertFeedback()">Criar Ação no PDI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 9: FORMULÁRIO DE LIVRO
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-livro-form">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="livro-modal-title">Adicionar Livro</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-livro-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-livro" onsubmit="return false;">
+          <input type="hidden" id="livro-field-id" value="" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Título da Obra *</label>
+              <input type="text" class="form-control" id="livro-field-titulo" placeholder="Ex: Clean Architecture" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Autor *</label>
+              <input type="text" class="form-control" id="livro-field-autor" placeholder="Ex: Robert C. Martin" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Categoria</label>
+              <input type="text" class="form-control" id="livro-field-categoria" placeholder="Ex: Engenharia de Software, Liderança" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cor da Lombada 3D</label>
+              <select class="form-control" id="livro-field-cor">
+                <option value="#3b82f6" selected>Azul Royal (#3b82f6)</option>
+                <option value="#8b5cf6">Roxo Violeta (#8b5cf6)</option>
+                <option value="#10b981">Verde Esmeralda (#10b981)</option>
+                <option value="#ef4444">Bordô Carmim (#ef4444)</option>
+                <option value="#f59e0b">Âmbar Dourado (#f59e0b)</option>
+                <option value="#06b6d4">Ciano Oceano (#06b6d4)</option>
+                <option value="#374151">Grafite Escuro (#374151)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Total de Páginas *</label>
+              <input type="number" class="form-control" id="livro-field-paginas" min="1" placeholder="Ex: 350" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Página Atual</label>
+              <input type="number" class="form-control" id="livro-field-pagina-atual" min="0" value="0" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Status da Leitura</label>
+              <select class="form-control" id="livro-field-status">
+                <option value="quero_ler" selected>Quero Ler</option>
+                <option value="lendo">Lendo Agora</option>
+                <option value="concluido">Concluído</option>
+                <option value="pausado">Pausado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Avaliação Pessoal (1 a 5 estrelas)</label>
+              <select class="form-control" id="livro-field-avaliacao">
+                <option value="0">Sem avaliação</option>
+                <option value="1">★☆☆☆☆ (1 estrela)</option>
+                <option value="2">★★☆☆☆ (2 estrelas)</option>
+                <option value="3">★★★☆☆ (3 estrelas)</option>
+                <option value="4">★★★★☆ (4 estrelas)</option>
+                <option value="5">★★★★★ (5 estrelas)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.88rem;">
+              <input type="checkbox" id="livro-field-favorito" />
+              <span>Marcar como Leitura Favorita ⭐</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Resumo / Visão Geral</label>
+            <textarea class="form-control" id="livro-field-resumo" rows="2" placeholder="Sinopse ou tema central da leitura..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Principais Aprendizados & Aplicações Práticas</label>
+            <textarea class="form-control" id="livro-field-aprendizados" rows="2" placeholder="O que este livro agregou ao seu desenvolvimento profissional?"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-livro-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-livro" onclick="App.saveLivroRecord()">Salvar Livro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 10: REGISTRAR SESSÃO DE LEITURA
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-leitura-sessao">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Sessão de Leitura</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-leitura-sessao')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-sessao-leitura" onsubmit="return false;">
+          <input type="hidden" id="sessao-field-livro-id" value="" />
+
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: 700; color: var(--text-primary);" id="sessao-livro-titulo">Título do Livro</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted);" id="sessao-livro-info">Página Atual: 45 / 300 (15%)</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Página Final Alcançada *</label>
+              <input type="number" class="form-control" id="sessao-field-pagina-final" min="1" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duração da Sessão (minutos)</label>
+              <input type="number" class="form-control" id="sessao-field-duracao" min="1" placeholder="Ex: 30" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notas / Reflexões da Sessão</label>
+            <textarea class="form-control" id="sessao-field-notas" rows="3" placeholder="Insights, citações ou reflexões do capítulo lido..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-leitura-sessao')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-sessao" onclick="App.saveSessaoLeitura()">Salvar Sessão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 11: CONFIRMAR EXCLUSÃO SEGURA
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-confirm-delete">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #ef4444;">Confirmar Exclusão</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-confirm-delete')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="delete-target-table" value="" />
+        <input type="hidden" id="delete-target-id" value="" />
+
+        <p style="font-size: 0.92rem; color: var(--text-primary); line-height: 1.5;" id="delete-confirm-message">
+          Tem certeza de que deseja excluir este registro?
+        </p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+          Esta operação move o registro para o histórico de auditoria e garante a integridade dos dados vinculados.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-confirm-delete')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-delete-execute" style="background: #ef4444; border-color: #ef4444;" onclick="App.executeDeleteRecord()">Excluir com Segurança</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container Global de Toasts -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Scripts e Componentes Frontend -->
+  <!-- Inclusão dos Scripts Frontend -->
   <?!= include('Components'); ?>
   <?!= include('ApiClient'); ?>
   <?!= include('App'); ?>

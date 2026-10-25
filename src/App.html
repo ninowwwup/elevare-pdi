@@ -1,207 +1,1726 @@
 <script>
   /**
-   * Elevare PDI — Lógica do Frontend (Fase 2)
+   * Elevare PDI — Lógica do Frontend (Fase 3: Funcionalidades Completas)
+   * Controla a navegação, persistência real, formulários, filtros, estante 3D e KPIs.
    */
 
-  document.addEventListener('DOMContentLoaded', function () {
-    initElevareApp();
-  });
+  window.App = (function () {
+    // Cache de dados locais em memória
+    var state = {
+      activePane: 'pane-dashboard',
+      pdiList: [],
+      skillsList: [],
+      metasList: [],
+      acoesList: [],
+      feedbacksList: [],
+      livrosList: [],
+      activeBookshelfView: '3d',
+      selectedEvalLevel: 3,
+      deleteInfo: { table: '', id: '', name: '' }
+    };
 
-  function initElevareApp() {
-    UI.initTheme();
-    setupDynamicGreeting();
-    setupNavigationAndTabs();
-    setupSidebarControls();
-    setupThemeToggle();
-    bindActionButtons();
-    setupQuickCreateModal();
+    /**
+     * Inicialização da aplicação ao carregar a página.
+     */
+    function init() {
+      UI.initTheme();
+      setupDynamicGreeting();
+      setupNavigation();
+      setupSidebarControls();
+      setupThemeToggle();
+      setupGlobalSearch();
+      bindGlobalButtons();
 
-    // Executa verificação inicial de conexão com o Google Sheets
-    checkDatabaseConnection();
-  }
-
-  /**
-   * Configura saudação contextual baseada no horário local.
-   */
-  function setupDynamicGreeting() {
-    var greetingEl = document.getElementById('hero-greeting-text');
-    if (!greetingEl) return;
-
-    var hour = new Date().getHours();
-    var greeting = 'Olá';
-    if (hour >= 5 && hour < 12) {
-      greeting = 'Bom dia';
-    } else if (hour >= 12 && hour < 18) {
-      greeting = 'Boa tarde';
-    } else {
-      greeting = 'Boa noite';
+      // Carrega dados iniciais do Dashboard e verifica conexão
+      loadDashboardData();
+      checkDatabaseConnection();
     }
 
-    greetingEl.textContent = greeting + '! Bem-vindo ao Elevare PDI';
-  }
+    /**
+     * Configura saudação contextual baseada na hora local.
+     */
+    function setupDynamicGreeting() {
+      var greetingEl = document.getElementById('hero-greeting-text');
+      if (!greetingEl) return;
 
-  /**
-   * Navegação fluida entre abas da interface.
-   */
-  function setupNavigationAndTabs() {
-    var tabs = document.querySelectorAll('.view-tab');
-    tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        var targetId = tab.dataset.target;
-        switchTab(targetId);
+      var hour = new Date().getHours();
+      var greeting = 'Olá';
+      if (hour >= 5 && hour < 12) {
+        greeting = 'Bom dia';
+      } else if (hour >= 12 && hour < 18) {
+        greeting = 'Boa tarde';
+      } else {
+        greeting = 'Boa noite';
+      }
+      greetingEl.textContent = greeting + '! Bem-vindo ao Elevare PDI';
+    }
+
+    /**
+     * Navegação entre abas e painéis sincronizada entre Sidebar e Top Tabs.
+     */
+    function setupNavigation() {
+      // 1. Links da barra lateral
+      var navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+      navLinks.forEach(function (link) {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          var targetPane = link.dataset.pane;
+          if (targetPane) {
+            switchPane(targetPane);
+          }
+        });
       });
-    });
 
-    // Links da barra lateral também ativam a aba correspondente
-    var navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(function (link) {
-      link.addEventListener('click', function (e) {
-        e.preventDefault();
-        navLinks.forEach(function (l) { l.classList.remove('active'); });
-        link.classList.add('active');
+      // 2. Botões das abas superiores
+      var viewTabs = document.querySelectorAll('.view-tab');
+      viewTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var targetPane = tab.dataset.pane;
+          if (targetPane) {
+            switchPane(targetPane);
+          }
+        });
+      });
 
-        var targetTab = link.dataset.tab;
-        if (targetTab) {
-          switchTab(targetTab);
+      // 3. Badge do banco no topo abre o painel de diagnóstico
+      var topbarBadge = document.getElementById('topbar-db-badge');
+      if (topbarBadge) {
+        topbarBadge.addEventListener('click', function () {
+          switchPane('pane-database');
+        });
+      }
+    }
+
+    /**
+     * Alterna o painel visível e carrega os dados correspondentes sob demanda.
+     */
+    function switchPane(targetPaneId) {
+      state.activePane = targetPaneId;
+
+      // Atualiza abas superiores
+      var viewTabs = document.querySelectorAll('.view-tab');
+      viewTabs.forEach(function (tab) {
+        tab.classList.toggle('active', tab.dataset.pane === targetPaneId);
+      });
+
+      // Atualiza links da sidebar
+      var navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+      navLinks.forEach(function (link) {
+        link.classList.toggle('active', link.dataset.pane === targetPaneId);
+      });
+
+      // Oculta todos os painéis e exibe o alvo
+      var panes = document.querySelectorAll('.tab-pane');
+      panes.forEach(function (pane) {
+        pane.style.display = (pane.id === targetPaneId) ? 'block' : 'none';
+      });
+
+      // Fecha sidebar móvel se aberta
+      var sidebar = document.getElementById('app-sidebar');
+      if (sidebar && sidebar.classList.contains('mobile-open')) {
+        sidebar.classList.remove('mobile-open');
+      }
+
+      // Dispara o carregamento de dados do módulo selecionado
+      if (targetPaneId === 'pane-dashboard') {
+        loadDashboardData();
+      } else if (targetPaneId === 'pane-pdi') {
+        loadPdiList();
+      } else if (targetPaneId === 'pane-skills') {
+        loadSkillsList();
+      } else if (targetPaneId === 'pane-metas') {
+        loadMetasList();
+      } else if (targetPaneId === 'pane-feedbacks') {
+        loadFeedbacksList();
+      } else if (targetPaneId === 'pane-biblioteca') {
+        loadLivrosList();
+      } else if (targetPaneId === 'pane-database') {
+        checkDatabaseConnection();
+      }
+    }
+
+    /**
+     * Configura atalho Ctrl+K e busca global.
+     */
+    function setupGlobalSearch() {
+      var searchInput = document.getElementById('global-search-input');
+      if (!searchInput) return;
+
+      document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          searchInput.focus();
         }
       });
-    });
 
-    // Badge no header também direciona para a aba do banco
-    var topbarBadge = document.getElementById('topbar-db-badge');
-    if (topbarBadge) {
-      topbarBadge.addEventListener('click', function () {
-        switchTab('tab-database');
-        var navDb = document.getElementById('nav-database');
-        if (navDb) {
-          navLinks.forEach(function (l) { l.classList.remove('active'); });
-          navDb.classList.add('active');
+      searchInput.addEventListener('input', function () {
+        var query = searchInput.value.trim().toLowerCase();
+
+        // Repassa a busca para o módulo ativo
+        if (state.activePane === 'pane-pdi') {
+          var pdiInput = document.getElementById('pdi-search-input');
+          if (pdiInput) { pdiInput.value = query; filterPdiList(); }
+        } else if (state.activePane === 'pane-skills') {
+          var skillInput = document.getElementById('skills-search-input');
+          if (skillInput) { skillInput.value = query; filterSkillsList(); }
+        } else if (state.activePane === 'pane-metas') {
+          var metaInput = document.getElementById('metas-search-input');
+          if (metaInput) { metaInput.value = query; filterMetasList(); }
+        } else if (state.activePane === 'pane-feedbacks') {
+          var fbInput = document.getElementById('feedbacks-search-input');
+          if (fbInput) { fbInput.value = query; filterFeedbacksList(); }
+        } else if (state.activePane === 'pane-biblioteca') {
+          var bookInput = document.getElementById('livros-search-input');
+          if (bookInput) { bookInput.value = query; filterLivrosList(); }
         }
       });
     }
-  }
 
-  function switchTab(targetTabId) {
-    var tabBtns = document.querySelectorAll('.view-tab');
-    tabBtns.forEach(function (b) {
-      b.classList.toggle('active', b.dataset.target === targetTabId);
-    });
+    /**
+     * Vincula botões globais e modais.
+     */
+    function bindGlobalButtons() {
+      var btnQuickCreate = document.getElementById('btn-quick-create');
+      if (btnQuickCreate) {
+        btnQuickCreate.addEventListener('click', function () {
+          UI.openModal('modal-quick-create');
+        });
+      }
 
-    var paneDashboard = document.getElementById('pane-dashboard');
-    var paneDatabase = document.getElementById('pane-database');
+      var btnRefreshDash = document.getElementById('btn-action-refresh-dash');
+      if (btnRefreshDash) {
+        btnRefreshDash.addEventListener('click', function () {
+          loadDashboardData(btnRefreshDash);
+        });
+      }
 
-    if (targetTabId === 'tab-dashboard') {
-      if (paneDashboard) paneDashboard.style.display = 'block';
-      if (paneDatabase) paneDatabase.style.display = 'none';
-    } else {
-      if (paneDashboard) paneDashboard.style.display = 'none';
-      if (paneDatabase) paneDatabase.style.display = 'block';
+      var btnSaveQuick = document.getElementById('btn-save-quick-record');
+      if (btnSaveQuick) {
+        btnSaveQuick.addEventListener('click', saveQuickRecord);
+      }
+
+      var btnCheckDb = document.getElementById('btn-check-db');
+      if (btnCheckDb) {
+        btnCheckDb.addEventListener('click', function () { checkDatabaseConnection(btnCheckDb); });
+      }
+
+      var btnSetupDb = document.getElementById('btn-setup-db');
+      if (btnSetupDb) {
+        btnSetupDb.addEventListener('click', function () { runSetupDatabase(btnSetupDb); });
+      }
+
+      var btnTestPersistence = document.getElementById('btn-test-persistence');
+      if (btnTestPersistence) {
+        btnTestPersistence.addEventListener('click', function () { runPersistenceTest(btnTestPersistence); });
+      }
     }
-  }
 
-  /**
-   * Controles da Sidebar (Recolher no Desktop / Gaveta no Mobile).
-   */
-  function setupSidebarControls() {
-    var sidebar = document.getElementById('app-sidebar');
-    var toggleBtn = document.getElementById('sidebar-toggle-btn');
-    var mobileBtn = document.getElementById('mobile-menu-btn');
+    function setupSidebarControls() {
+      var sidebar = document.getElementById('app-sidebar');
+      var toggleBtn = document.getElementById('sidebar-toggle-btn');
+      var mobileBtn = document.getElementById('mobile-menu-btn');
 
-    if (toggleBtn && sidebar) {
-      toggleBtn.addEventListener('click', function () {
-        sidebar.classList.toggle('collapsed');
+      if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', function () {
+          sidebar.classList.toggle('collapsed');
+        });
+      }
+
+      if (mobileBtn && sidebar) {
+        mobileBtn.addEventListener('click', function () {
+          sidebar.classList.toggle('mobile-open');
+        });
+      }
+    }
+
+    function setupThemeToggle() {
+      var btn = document.getElementById('theme-toggle-btn');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          UI.toggleTheme();
+        });
+      }
+    }
+
+    /* ==========================================================================
+       DASHBOARD GERAL (MÉTRICAS E WIDGETS REAIS)
+       ========================================================================== */
+
+    function loadDashboardData(btnElement) {
+      if (btnElement) UI.setLoading(btnElement, true, 'Atualizando...');
+
+      ApiClient.call('apiGetDashboardStats')
+        .then(function (stats) {
+          if (btnElement) UI.setLoading(btnElement, false);
+          renderDashboardKPIs(stats.kpis);
+          renderDashboardWidgets(stats);
+        })
+        .catch(function (err) {
+          if (btnElement) UI.setLoading(btnElement, false);
+          console.warn('[Dashboard] Erro ao carregar estatísticas:', err.message);
+        });
+    }
+
+    function renderDashboardKPIs(kpis) {
+      if (!kpis) return;
+      var elMetasConcluidas = document.getElementById('kpi-metas-concluidas');
+      var elMetasAndamento = document.getElementById('kpi-metas-andamento');
+      var elFeedbacksTotal = document.getElementById('kpi-feedbacks-total');
+      var elLivrosTotal = document.getElementById('kpi-livros-total');
+
+      if (elMetasConcluidas) elMetasConcluidas.textContent = kpis.metasConcluidas || 0;
+      if (elMetasAndamento) elMetasAndamento.textContent = kpis.metasEmAndamento || 0;
+      if (elFeedbacksTotal) elFeedbacksTotal.textContent = kpis.totalFeedbacks || 0;
+      if (elLivrosTotal) elLivrosTotal.textContent = kpis.totalLivros || 0;
+    }
+
+    function renderDashboardWidgets(stats) {
+      var metasContainer = document.getElementById('dash-metas-container');
+      var feedbacksContainer = document.getElementById('dash-feedbacks-container');
+
+      // Widget 1: Metas Prioritárias
+      if (metasContainer) {
+        if (!stats.priorityMetas || stats.priorityMetas.length === 0) {
+          metasContainer.innerHTML = 
+            '<div class="empty-state">' +
+              '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+              '<div class="empty-state-title">Nenhuma meta cadastrada</div>' +
+              '<div class="empty-state-desc">Defina metas SMART para direcionar seu crescimento profissional.</div>' +
+              '<button class="btn btn-secondary btn-sm" onclick="App.openCreateMetaModal()">Cadastrar Primeira Meta</button>' +
+            '</div>';
+        } else {
+          var html = '<div style="display:flex; flex-direction:column; gap:0.75rem;">';
+          for (var i = 0; i < stats.priorityMetas.length; i++) {
+            var m = stats.priorityMetas[i];
+            var prioridadeBadge = m.prioridade === 'alta' ? 'badge-error' : (m.prioridade === 'media' ? 'badge-warning' : 'badge-info');
+            html += 
+              '<div style="background:var(--bg-surface-elevated); padding:0.85rem 1rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between; gap:1rem;">' +
+                '<div>' +
+                  '<div style="font-weight:600; font-size:0.92rem; color:var(--text-primary);">' + UI.escapeHtml(m.titulo) + '</div>' +
+                  '<div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">Prazo: ' + (m.prazo || 'Sem prazo') + ' &bull; ' + UI.escapeHtml(m.objetivo_relacionado || 'Desenvolvimento') + '</div>' +
+                '</div>' +
+                '<span class="badge ' + prioridadeBadge + '">' + (m.prioridade || 'Média') + '</span>' +
+              '</div>';
+          }
+          html += '</div>';
+          metasContainer.innerHTML = html;
+        }
+      }
+
+      // Widget 2: Feedbacks Recentes
+      if (feedbacksContainer) {
+        if (!stats.recentFeedbacks || stats.recentFeedbacks.length === 0) {
+          feedbacksContainer.innerHTML = 
+            '<div class="empty-state">' +
+              '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+              '<div class="empty-state-title">Nenhum feedback registrado</div>' +
+              '<div class="empty-state-desc">Registre retornos recebidos para transformá-los em ações concretas.</div>' +
+              '<button class="btn btn-secondary btn-sm" onclick="App.openCreateFeedbackModal()">Registrar Primeiro Feedback</button>' +
+            '</div>';
+        } else {
+          var fbHtml = '<div style="display:flex; flex-direction:column; gap:0.75rem;">';
+          for (var f = 0; f < stats.recentFeedbacks.length; f++) {
+            var fb = stats.recentFeedbacks[f];
+            fbHtml += 
+              '<div style="background:var(--bg-surface-elevated); padding:0.85rem 1rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">' +
+                '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">' +
+                  '<div style="font-weight:600; font-size:0.92rem; color:var(--text-primary);">' + UI.escapeHtml(fb.titulo) + '</div>' +
+                  '<span class="badge badge-info">' + UI.escapeHtml(fb.origem || 'Origem') + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem;">Data: ' + (fb.data || '—') + ' &bull; Status: ' + (fb.status || 'novo') + '</div>' +
+              '</div>';
+          }
+          fbHtml += '</div>';
+          feedbacksContainer.innerHTML = fbHtml;
+        }
+      }
+    }
+
+    /* ==========================================================================
+       1. MÓDULO: MEU PDI (PLANOS DE DESENVOLVIMENTO)
+       ========================================================================== */
+
+    function loadPdiList() {
+      var container = document.getElementById('pdi-list-container');
+      if (container) {
+        container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner"></span> Carregando planos PDI...</div>';
+      }
+
+      ApiClient.call('apiListRecords', 'PLANOS_PDI')
+        .then(function (records) {
+          state.pdiList = records || [];
+          filterPdiList();
+        })
+        .catch(function (err) {
+          if (container) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color:var(--status-error);">Erro ao carregar Planos PDI</div><div class="empty-state-desc">' + UI.escapeHtml(err.message) + '</div></div>';
+          }
+        });
+    }
+
+    function filterPdiList() {
+      var searchInput = document.getElementById('pdi-search-input');
+      var statusSelect = document.getElementById('pdi-filter-status');
+      var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      var statusFilter = statusSelect ? statusSelect.value : 'todos';
+
+      var filtered = state.pdiList.filter(function (item) {
+        var matchStatus = (statusFilter === 'todos') || (item.status === statusFilter);
+        var textMatch = !query ||
+          (item.titulo && item.titulo.toLowerCase().indexOf(query) !== -1) ||
+          (item.cargo_desejado && item.cargo_desejado.toLowerCase().indexOf(query) !== -1) ||
+          (item.objetivo_profissional && item.objetivo_profissional.toLowerCase().indexOf(query) !== -1);
+        return matchStatus && textMatch;
       });
+
+      renderPdiCards(filtered);
     }
 
-    if (mobileBtn && sidebar) {
-      mobileBtn.addEventListener('click', function () {
-        sidebar.classList.toggle('mobile-open');
-      });
-    }
-  }
+    function renderPdiCards(list) {
+      var container = document.getElementById('pdi-list-container');
+      if (!container) return;
 
-  /**
-   * Alternador de Tema Escuro / Claro.
-   */
-  function setupThemeToggle() {
-    var btn = document.getElementById('theme-toggle-btn');
-    if (btn) {
-      btn.addEventListener('click', function () {
-        UI.toggleTheme();
-      });
-    }
-  }
-
-  /**
-   * Vincula os botões de ação e diagnósticos.
-   */
-  function bindActionButtons() {
-    var btnCheck = document.getElementById('btn-check-db');
-    if (btnCheck) {
-      btnCheck.addEventListener('click', function () {
-        checkDatabaseConnection(btnCheck);
-      });
-    }
-
-    var btnRefreshDash = document.getElementById('btn-action-refresh-dash');
-    if (btnRefreshDash) {
-      btnRefreshDash.addEventListener('click', function () {
-        checkDatabaseConnection(btnRefreshDash);
-      });
-    }
-
-    var btnSetup = document.getElementById('btn-setup-db');
-    if (btnSetup) {
-      btnSetup.addEventListener('click', function () {
-        runSetupDatabase(btnSetup);
-      });
-    }
-
-    var btnTestPersistence = document.getElementById('btn-test-persistence');
-    if (btnTestPersistence) {
-      btnTestPersistence.addEventListener('click', function () {
-        runPersistenceTest(btnTestPersistence);
-      });
-    }
-
-    var btnQuickCreate = document.getElementById('btn-quick-create');
-    if (btnQuickCreate) {
-      btnQuickCreate.addEventListener('click', function () {
-        UI.openModal('modal-quick-create');
-      });
-    }
-  }
-
-  /**
-   * Modal de Criação Rápida de Registro.
-   */
-  function setupQuickCreateModal() {
-    var btnSave = document.getElementById('btn-save-quick-record');
-    if (!btnSave) return;
-
-    btnSave.addEventListener('click', function () {
-      var moduleSelect = document.getElementById('quick-target-module');
-      var titleInput = document.getElementById('quick-title');
-      var descInput = document.getElementById('quick-desc');
-
-      var targetTable = moduleSelect ? moduleSelect.value : 'METAS';
-      var title = titleInput ? titleInput.value.trim() : '';
-      var desc = descInput ? descInput.value.trim() : '';
-
-      if (!title) {
-        UI.showToast('Campo Obrigatório', 'Por favor, informe o título do registro.', 'warning');
-        if (titleInput) titleInput.focus();
+      if (!list || list.length === 0) {
+        container.innerHTML = 
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+            '<div class="empty-state-title">Nenhum plano PDI encontrado</div>' +
+            '<div class="empty-state-desc">Cadastre seu primeiro Plano de Desenvolvimento Individual para estruturar sua jornada profissional.</div>' +
+            '<button class="btn btn-primary btn-sm" onclick="App.openCreatePdiModal()">+ Novo Plano PDI</button>' +
+          '</div>';
         return;
       }
 
-      UI.setLoading(btnSave, true, 'Salvando...');
+      var html = '<div style="display:flex; flex-direction:column; gap:1.25rem;">';
+      for (var i = 0; i < list.length; i++) {
+        var p = list[i];
+        var statusBadge = p.status === 'ativo' ? 'badge-success' : (p.status === 'concluido' ? 'badge-violet' : 'badge-warning');
+
+        html += 
+          '<div class="content-card" style="margin-bottom:0;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">' +
+              '<div>' +
+                '<div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">' +
+                  '<h2 style="font-size:1.2rem; font-weight:700; color:var(--text-primary);">' + UI.escapeHtml(p.titulo) + '</h2>' +
+                  '<span class="badge ' + statusBadge + '">' + (p.status || 'Ativo').toUpperCase() + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.88rem; color:var(--accent-violet); font-weight:600;">Cargo / Área Alvo: ' + UI.escapeHtml(p.cargo_desejado || 'Não informado') + '</div>' +
+              '</div>' +
+              '<div style="display:flex; gap:0.5rem;">' +
+                '<button class="btn btn-secondary btn-sm" onclick="App.openEditPdiModal(\'' + p.id + '\')">Editar</button>' +
+                '<button class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="App.requestDeleteRecord(\'PLANOS_PDI\', \'' + p.id + '\', \'' + UI.escapeHtml(p.titulo) + '\')">Excluir</button>' +
+              '</div>' +
+            '</div>' +
+
+            '<div style="margin:1rem 0; font-size:0.9rem; color:var(--text-secondary); line-height:1.5;">' +
+              '<strong>Objetivo Estratégico:</strong> ' + UI.escapeHtml(p.objetivo_profissional || '—') +
+            '</div>';
+
+        if (p.pontos_fortes || p.oportunidades_melhoria) {
+          html += '<div class="form-row" style="margin-bottom:0.85rem;">';
+          if (p.pontos_fortes) {
+            html += '<div style="background:var(--bg-surface-elevated); padding:0.75rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">' +
+              '<div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--status-success); margin-bottom:0.35rem;">Pontos Fortes (Forças)</div>' +
+              '<div style="font-size:0.83rem; color:var(--text-primary);">' + UI.escapeHtml(p.pontos_fortes) + '</div>' +
+            '</div>';
+          }
+          if (p.oportunidades_melhoria) {
+            html += '<div style="background:var(--bg-surface-elevated); padding:0.75rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">' +
+              '<div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#f59e0b; margin-bottom:0.35rem;">Oportunidades de Melhoria (Gaps)</div>' +
+              '<div style="font-size:0.83rem; color:var(--text-primary);">' + UI.escapeHtml(p.oportunidades_melhoria) + '</div>' +
+            '</div>';
+          }
+          html += '</div>';
+        }
+
+        html += 
+            '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:0.78rem; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:0.75rem; margin-top:0.5rem;">' +
+              '<div>Início: ' + (p.data_inicio || '—') + ' &bull; Prazo: ' + (p.prazo_final || '—') + '</div>' +
+              '<div>Indicadores: ' + UI.escapeHtml(p.indicadores_sucesso || 'Em definição') + '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function openCreatePdiModal() {
+      document.getElementById('pdi-modal-title').textContent = 'Novo Plano de Desenvolvimento Individual';
+      document.getElementById('pdi-field-id').value = '';
+      document.getElementById('pdi-field-titulo').value = '';
+      document.getElementById('pdi-field-cargo').value = '';
+      document.getElementById('pdi-field-objetivo').value = '';
+      document.getElementById('pdi-field-pontos-fortes').value = '';
+      document.getElementById('pdi-field-melhorias').value = '';
+      document.getElementById('pdi-field-inicio').value = new Date().toISOString().split('T')[0];
+      document.getElementById('pdi-field-prazo').value = '';
+      document.getElementById('pdi-field-status').value = 'ativo';
+      document.getElementById('pdi-field-indicadores').value = '';
+      document.getElementById('pdi-field-observacoes').value = '';
+      UI.openModal('modal-pdi-form');
+    }
+
+    function openEditPdiModal(id) {
+      var item = state.pdiList.find(function (p) { return p.id === id; });
+      if (!item) return;
+
+      document.getElementById('pdi-modal-title').textContent = 'Editar Plano PDI';
+      document.getElementById('pdi-field-id').value = item.id;
+      document.getElementById('pdi-field-titulo').value = item.titulo || '';
+      document.getElementById('pdi-field-cargo').value = item.cargo_desejado || '';
+      document.getElementById('pdi-field-objetivo').value = item.objetivo_profissional || '';
+      document.getElementById('pdi-field-pontos-fortes').value = item.pontos_fortes || '';
+      document.getElementById('pdi-field-melhorias').value = item.oportunidades_melhoria || '';
+      document.getElementById('pdi-field-inicio').value = item.data_inicio || '';
+      document.getElementById('pdi-field-prazo').value = item.prazo_final || '';
+      document.getElementById('pdi-field-status').value = item.status || 'ativo';
+      document.getElementById('pdi-field-indicadores').value = item.indicadores_sucesso || '';
+      document.getElementById('pdi-field-observacoes').value = item.observacoes || '';
+      UI.openModal('modal-pdi-form');
+    }
+
+    function savePdiRecord() {
+      var btn = document.getElementById('btn-save-pdi');
+      var id = document.getElementById('pdi-field-id').value;
+      var titulo = document.getElementById('pdi-field-titulo').value.trim();
+      var cargo = document.getElementById('pdi-field-cargo').value.trim();
+      var objetivo = document.getElementById('pdi-field-objetivo').value.trim();
+
+      if (!titulo || !cargo || !objetivo) {
+        UI.showToast('Campos Obrigatórios', 'Preencha o título, cargo desejado e objetivo profissional.', 'warning');
+        return;
+      }
+
+      var recordData = {
+        titulo: titulo,
+        cargo_desejado: cargo,
+        objetivo_profissional: objetivo,
+        pontos_fortes: document.getElementById('pdi-field-pontos-fortes').value.trim(),
+        oportunidades_melhoria: document.getElementById('pdi-field-melhorias').value.trim(),
+        data_inicio: document.getElementById('pdi-field-inicio').value,
+        prazo_final: document.getElementById('pdi-field-prazo').value,
+        status: document.getElementById('pdi-field-status').value,
+        indicadores_sucesso: document.getElementById('pdi-field-indicadores').value.trim(),
+        observacoes: document.getElementById('pdi-field-observacoes').value.trim()
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      var promise = id ? ApiClient.call('apiUpdateRecord', 'PLANOS_PDI', id, recordData) : ApiClient.call('apiCreateRecord', 'PLANOS_PDI', recordData);
+
+      promise
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-pdi-form');
+          UI.showToast('Sucesso', 'Plano PDI salvo com sucesso na sua planilha!', 'success');
+          loadPdiList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       2. MÓDULO: COMPETÊNCIAS & AVALIAÇÕES HISTÓRICAS
+       ========================================================================== */
+
+    function loadSkillsList() {
+      var container = document.getElementById('skills-list-container');
+      if (container) {
+        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner"></span> Carregando competências...</div>';
+      }
+
+      ApiClient.call('apiListRecords', 'COMPETENCIAS')
+        .then(function (records) {
+          state.skillsList = records || [];
+          filterSkillsList();
+        })
+        .catch(function (err) {
+          if (container) {
+            container.innerHTML = '<div style="grid-column:1/-1;" class="empty-state"><div class="empty-state-title" style="color:var(--status-error);">Erro ao carregar competências</div><div class="empty-state-desc">' + UI.escapeHtml(err.message) + '</div></div>';
+          }
+        });
+    }
+
+    function filterSkillsList() {
+      var searchInput = document.getElementById('skills-search-input');
+      var tipoSelect = document.getElementById('skills-filter-tipo');
+      var gapSelect = document.getElementById('skills-filter-gap');
+
+      var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      var tipoFilter = tipoSelect ? tipoSelect.value : 'todos';
+      var gapFilter = gapSelect ? gapSelect.value : 'todos';
+
+      var filtered = state.skillsList.filter(function (item) {
+        var matchTipo = (tipoFilter === 'todos') || (item.tipo === tipoFilter);
+        var atual = Number(item.nivel_atual) || 1;
+        var desejado = Number(item.nivel_desejado) || 1;
+        var gap = Math.max(0, desejado - atual);
+
+        var matchGap = true;
+        if (gapFilter === 'com_gap') matchGap = gap > 0;
+        if (gapFilter === 'sem_gap') matchGap = gap === 0;
+
+        var textMatch = !query ||
+          (item.nome && item.nome.toLowerCase().indexOf(query) !== -1) ||
+          (item.categoria && item.categoria.toLowerCase().indexOf(query) !== -1);
+
+        return matchTipo && matchGap && textMatch;
+      });
+
+      renderSkillsCards(filtered);
+    }
+
+    function renderSkillsCards(list) {
+      var container = document.getElementById('skills-list-container');
+      if (!container) return;
+
+      if (!list || list.length === 0) {
+        container.innerHTML = 
+          '<div style="grid-column:1/-1;" class="empty-state">' +
+            '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+            '<div class="empty-state-title">Nenhuma competência cadastrada</div>' +
+            '<div class="empty-state-desc">Cadastre suas competências técnicas e comportamentais para mapear gaps e guiar seu desenvolvimento.</div>' +
+            '<button class="btn btn-primary btn-sm" onclick="App.openCreateSkillModal()">+ Nova Competência</button>' +
+          '</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < list.length; i++) {
+        var s = list[i];
+        var atual = Math.min(5, Math.max(1, Number(s.nivel_atual) || 1));
+        var desejado = Math.min(5, Math.max(1, Number(s.nivel_desejado) || 1));
+        var gap = Math.max(0, desejado - atual);
+
+        var tipoBadge = s.tipo === 'hard_skill' ? '<span class="badge badge-info">Hard Skill</span>' : '<span class="badge badge-violet">Soft Skill</span>';
+        var gapBadge = gap > 0 
+          ? '<span class="badge badge-warning">Lacuna: +' + gap + ' níveis</span>'
+          : '<span class="badge badge-success">Meta Atingida</span>';
+
+        var pctAtual = (atual / 5) * 100;
+        var pctDesejado = (desejado / 5) * 100;
+
+        html += 
+          '<div class="skill-card">' +
+            '<div>' +
+              '<div class="skill-card-top">' +
+                '<div>' +
+                  '<div class="skill-name">' + UI.escapeHtml(s.nome) + '</div>' +
+                  '<div class="skill-category">' + UI.escapeHtml(s.categoria || 'Geral') + '</div>' +
+                '</div>' +
+                '<div>' + tipoBadge + '</div>' +
+              '</div>' +
+
+              '<div style="margin-bottom:0.75rem;">' + gapBadge + '</div>' +
+
+              '<div class="skill-scale-bar">' +
+                '<div class="skill-scale-labels">' +
+                  '<span>Atual: Nível ' + atual + '/5</span>' +
+                  '<span>Alvo: Nível ' + desejado + '/5</span>' +
+                '</div>' +
+                '<div class="skill-track">' +
+                  '<div class="skill-fill-target" style="width:' + pctDesejado + '%;"></div>' +
+                  '<div class="skill-fill-current" style="width:' + pctAtual + '%;"></div>' +
+                '</div>' +
+              '</div>' +
+
+              (s.descricao ? '<p style="font-size:0.83rem; color:var(--text-secondary); margin-bottom:0.75rem; line-height:1.4;">' + UI.escapeHtml(s.descricao) + '</p>' : '') +
+              (s.meta_desenvolvimento ? '<div style="font-size:0.78rem; color:var(--text-muted); background:var(--bg-surface-elevated); padding:0.5rem; border-radius:var(--radius-sm); margin-bottom:0.75rem;"><strong>Plano:</strong> ' + UI.escapeHtml(s.meta_desenvolvimento) + '</div>' : '') +
+            '</div>' +
+
+            '<div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-subtle); padding-top:0.75rem; margin-top:0.5rem;">' +
+              '<button class="btn btn-outline btn-sm" onclick="App.openEvaluateSkillModal(\'' + s.id + '\')">Avaliar Nível</button>' +
+              '<div style="display:flex; gap:0.4rem;">' +
+                '<button class="btn btn-secondary btn-sm" onclick="App.openEditSkillModal(\'' + s.id + '\')">Editar</button>' +
+                '<button class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="App.requestDeleteRecord(\'COMPETENCIAS\', \'' + s.id + '\', \'' + UI.escapeHtml(s.nome) + '\')">Excluir</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function openCreateSkillModal() {
+      document.getElementById('skill-modal-title').textContent = 'Nova Competência';
+      document.getElementById('skill-field-id').value = '';
+      document.getElementById('skill-field-nome').value = '';
+      document.getElementById('skill-field-tipo').value = 'hard_skill';
+      document.getElementById('skill-field-categoria').value = '';
+      document.getElementById('skill-field-importancia').value = 'alta';
+      document.getElementById('skill-field-nivel-atual').value = '3';
+      document.getElementById('skill-field-nivel-desejado').value = '5';
+      document.getElementById('skill-field-descricao').value = '';
+      document.getElementById('skill-field-meta-desenvolvimento').value = '';
+      UI.openModal('modal-skill-form');
+    }
+
+    function openEditSkillModal(id) {
+      var item = state.skillsList.find(function (s) { return s.id === id; });
+      if (!item) return;
+
+      document.getElementById('skill-modal-title').textContent = 'Editar Competência';
+      document.getElementById('skill-field-id').value = item.id;
+      document.getElementById('skill-field-nome').value = item.nome || '';
+      document.getElementById('skill-field-tipo').value = item.tipo || 'hard_skill';
+      document.getElementById('skill-field-categoria').value = item.categoria || '';
+      document.getElementById('skill-field-importancia').value = item.importancia || 'alta';
+      document.getElementById('skill-field-nivel-atual').value = item.nivel_atual || '3';
+      document.getElementById('skill-field-nivel-desejado').value = item.nivel_desejado || '5';
+      document.getElementById('skill-field-descricao').value = item.descricao || '';
+      document.getElementById('skill-field-meta-desenvolvimento').value = item.meta_desenvolvimento || '';
+      UI.openModal('modal-skill-form');
+    }
+
+    function saveSkillRecord() {
+      var btn = document.getElementById('btn-save-skill');
+      var id = document.getElementById('skill-field-id').value;
+      var nome = document.getElementById('skill-field-nome').value.trim();
+
+      if (!nome) {
+        UI.showToast('Campo Obrigatório', 'Informe o nome da competência.', 'warning');
+        return;
+      }
+
+      var recordData = {
+        nome: nome,
+        tipo: document.getElementById('skill-field-tipo').value,
+        categoria: document.getElementById('skill-field-categoria').value.trim(),
+        importancia: document.getElementById('skill-field-importancia').value,
+        nivel_atual: Number(document.getElementById('skill-field-nivel-atual').value),
+        nivel_desejado: Number(document.getElementById('skill-field-nivel-desejado').value),
+        descricao: document.getElementById('skill-field-descricao').value.trim(),
+        meta_desenvolvimento: document.getElementById('skill-field-meta-desenvolvimento').value.trim(),
+        status: 'em_desenvolvimento'
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      var promise = id ? ApiClient.call('apiUpdateRecord', 'COMPETENCIAS', id, recordData) : ApiClient.call('apiCreateRecord', 'COMPETENCIAS', recordData);
+
+      promise
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-skill-form');
+          UI.showToast('Sucesso', 'Competência salva com sucesso!', 'success');
+          loadSkillsList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    function openEvaluateSkillModal(id) {
+      var item = state.skillsList.find(function (s) { return s.id === id; });
+      if (!item) return;
+
+      document.getElementById('eval-field-comp-id').value = item.id;
+      document.getElementById('eval-comp-name').textContent = item.nome;
+      document.getElementById('eval-comp-current').textContent = 'Nível Atual: ' + (item.nivel_atual || 1) + ' / 5 • Alvo Desejado: ' + (item.nivel_desejado || 5) + ' / 5';
+      document.getElementById('eval-field-justificativa').value = '';
+      document.getElementById('eval-field-evidencias').value = '';
+
+      selectEvalLevel(Number(item.nivel_atual) || 3);
+      UI.openModal('modal-skill-evaluate');
+    }
+
+    function selectEvalLevel(level) {
+      state.selectedEvalLevel = level;
+      var buttons = document.querySelectorAll('.level-radio-btn');
+      buttons.forEach(function (btn, index) {
+        var btnLvl = index + 1;
+        btn.classList.toggle('selected', btnLvl === level);
+        var radio = btn.querySelector('input');
+        if (radio) radio.checked = (btnLvl === level);
+      });
+    }
+
+    function saveEvaluationRecord() {
+      var btn = document.getElementById('btn-save-evaluation');
+      var compId = document.getElementById('eval-field-comp-id').value;
+      var justificativa = document.getElementById('eval-field-justificativa').value.trim();
+      var evidencias = document.getElementById('eval-field-evidencias').value.trim();
+
+      if (!justificativa) {
+        UI.showToast('Campo Obrigatório', 'Por favor, informe a justificativa da avaliação.', 'warning');
+        return;
+      }
+
+      var evalData = {
+        competencia_id: compId,
+        nivel: state.selectedEvalLevel,
+        justificativa: justificativa,
+        evidencias: evidencias,
+        origem: 'Autoavaliação'
+      };
+
+      UI.setLoading(btn, true, 'Gravando Avaliação...');
+      ApiClient.call('apiAddAvaliacao', evalData)
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-skill-evaluate');
+          UI.showToast('Avaliação Registrada!', 'Histórico gravado na aba AVALIACOES e nível atualizado!', 'success');
+          loadSkillsList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Avaliar', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       3. MÓDULO: METAS & AÇÕES DE DESENVOLVIMENTO
+       ========================================================================== */
+
+    function loadMetasList() {
+      var container = document.getElementById('metas-list-container');
+      if (container) {
+        container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner"></span> Carregando metas e ações...</div>';
+      }
+
+      Promise.all([
+        ApiClient.call('apiListRecords', 'METAS'),
+        ApiClient.call('apiListRecords', 'ACOES')
+      ])
+        .then(function (results) {
+          state.metasList = results[0] || [];
+          state.acoesList = results[1] || [];
+          checkMetasDeadlines();
+          filterMetasList();
+        })
+        .catch(function (err) {
+          if (container) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color:var(--status-error);">Erro ao carregar metas</div><div class="empty-state-desc">' + UI.escapeHtml(err.message) + '</div></div>';
+          }
+        });
+    }
+
+    function checkMetasDeadlines() {
+      var banner = document.getElementById('metas-alert-banner');
+      var alertText = document.getElementById('metas-alert-text');
+      if (!banner || !alertText) return;
+
+      var hoje = new Date().toISOString().split('T')[0];
+      var metasAtrasadas = 0;
+      var acoesVencendo = 0;
+
+      for (var m = 0; m < state.metasList.length; m++) {
+        var meta = state.metasList[m];
+        if (meta.status !== 'concluida' && meta.status !== 'cancelada' && meta.prazo && meta.prazo < hoje) {
+          metasAtrasadas++;
+        }
+      }
+
+      if (metasAtrasadas > 0) {
+        banner.style.display = 'flex';
+        alertText.textContent = 'Atenção: Você possui ' + metasAtrasadas + ' meta(s) com prazo vencido que necessitam de revisão!';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    function filterMetasList() {
+      var searchInput = document.getElementById('metas-search-input');
+      var statusSelect = document.getElementById('metas-filter-status');
+      var prioridadeSelect = document.getElementById('metas-filter-prioridade');
+
+      var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      var statusFilter = statusSelect ? statusSelect.value : 'todos';
+      var prioridadeFilter = prioridadeSelect ? prioridadeSelect.value : 'todos';
+      var hoje = new Date().toISOString().split('T')[0];
+
+      var filtered = state.metasList.filter(function (item) {
+        var matchStatus = true;
+        if (statusFilter === 'atrasada') {
+          matchStatus = (item.status !== 'concluida' && item.prazo && item.prazo < hoje);
+        } else if (statusFilter !== 'todos') {
+          matchStatus = (item.status === statusFilter);
+        }
+
+        var matchPrioridade = (prioridadeFilter === 'todos') || (item.prioridade === prioridadeFilter);
+        var textMatch = !query ||
+          (item.titulo && item.titulo.toLowerCase().indexOf(query) !== -1) ||
+          (item.descricao && item.descricao.toLowerCase().indexOf(query) !== -1) ||
+          (item.objetivo_relacionado && item.objetivo_relacionado.toLowerCase().indexOf(query) !== -1);
+
+        return matchStatus && matchPrioridade && textMatch;
+      });
+
+      renderMetasCards(filtered);
+    }
+
+    function renderMetasCards(list) {
+      var container = document.getElementById('metas-list-container');
+      if (!container) return;
+
+      if (!list || list.length === 0) {
+        container.innerHTML = 
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+            '<div class="empty-state-title">Nenhuma meta SMART encontrada</div>' +
+            '<div class="empty-state-desc">Defina metas estruturadas e vincule ações práticas para acompanhar sua evolução.</div>' +
+            '<button class="btn btn-primary btn-sm" onclick="App.openCreateMetaModal()">+ Nova Meta SMART</button>' +
+          '</div>';
+        return;
+      }
+
+      var hoje = new Date().toISOString().split('T')[0];
+      var html = '<div style="display:flex; flex-direction:column; gap:1.25rem;">';
+
+      for (var i = 0; i < list.length; i++) {
+        var m = list[i];
+        var isAtrasada = (m.status !== 'concluida' && m.status !== 'cancelada' && m.prazo && m.prazo < hoje);
+
+        // Ações vinculadas a esta meta
+        var childAcoes = state.acoesList.filter(function (a) { return a.meta_id === m.id; });
+        var totalAcoes = childAcoes.length;
+        var concluidas = childAcoes.filter(function (a) { return a.status === 'concluida'; }).length;
+
+        // Regra clara de progresso: % de ações concluídas
+        var pctProgresso = totalAcoes > 0 ? Math.round((concluidas / totalAcoes) * 100) : (m.status === 'concluida' ? 100 : 0);
+
+        var prioridadeBadge = m.prioridade === 'alta' ? 'badge-error' : (m.prioridade === 'media' ? 'badge-warning' : 'badge-info');
+        var statusBadge = m.status === 'concluida' ? 'badge-success' : (m.status === 'planejada' ? 'badge-info' : 'badge-violet');
+
+        html += 
+          '<div class="goal-card">' +
+            '<div class="goal-header">' +
+              '<div>' +
+                '<div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">' +
+                  '<div class="goal-title">' + UI.escapeHtml(m.titulo) + '</div>' +
+                  '<span class="badge ' + statusBadge + '">' + (m.status || 'Em Andamento').toUpperCase() + '</span>' +
+                  '<span class="badge ' + prioridadeBadge + '">' + (m.prioridade || 'Média') + '</span>' +
+                  (isAtrasada ? '<span class="badge badge-error">Atrasada</span>' : '') +
+                '</div>' +
+                '<div style="font-size:0.83rem; color:var(--text-muted);">' +
+                  'Início: ' + (m.data_inicial || '—') + ' &bull; Prazo: ' + (m.prazo || 'Sem prazo') + ' &bull; Área: ' + UI.escapeHtml(m.objetivo_relacionado || 'Geral') +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex; gap:0.5rem;">' +
+                '<button class="btn btn-secondary btn-sm" onclick="App.openEditMetaModal(\'' + m.id + '\')">Editar</button>' +
+                '<button class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="App.requestDeleteRecord(\'METAS\', \'' + m.id + '\', \'' + UI.escapeHtml(m.titulo) + '\')">Excluir</button>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="goal-progress-wrap">' +
+              '<div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.35rem;">' +
+                '<span>Progresso: ' + pctProgresso + '%</span>' +
+                '<span>' + concluidas + ' de ' + totalAcoes + ' ações concluídas</span>' +
+              '</div>' +
+              '<div class="progress-bar-bg">' +
+                '<div class="progress-bar-fill" style="width:' + pctProgresso + '%;"></div>' +
+              '</div>' +
+            '</div>' +
+
+            (m.resultado_esperado ? '<div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;"><strong>Resultado Esperado:</strong> ' + UI.escapeHtml(m.resultado_esperado) + '</div>' : '') +
+            (m.indicador ? '<div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.75rem;"><strong>Indicador de Sucesso:</strong> ' + UI.escapeHtml(m.indicador) + '</div>' : '') +
+
+            // Lista de Ações Vinculadas
+            '<div class="actions-list">' +
+              '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">' +
+                '<span style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Plano de Ações Vinculadas</span>' +
+                '<button class="btn btn-outline btn-sm" style="padding:0.2rem 0.6rem; font-size:0.75rem;" onclick="App.openAddAcaoModal(\'' + m.id + '\')">+ Adicionar Ação</button>' +
+              '</div>';
+
+        if (childAcoes.length === 0) {
+          html += '<div style="font-size:0.82rem; color:var(--text-muted); padding:0.5rem 0;">Nenhuma ação cadastrada para esta meta. Clique em "+ Adicionar Ação" acima.</div>';
+        } else {
+          for (var a = 0; a < childAcoes.length; a++) {
+            var acao = childAcoes[a];
+            var isConcluida = (acao.status === 'concluida');
+            var isAcaoAtrasada = (!isConcluida && acao.prazo && acao.prazo < hoje);
+
+            html += 
+              '<div class="action-row">' +
+                '<div style="display:flex; align-items:center; gap:0.6rem; flex:1;">' +
+                  '<input type="checkbox" ' + (isConcluida ? 'checked' : '') + ' onchange="App.toggleAcaoStatus(\'' + acao.id + '\', this.checked)" style="cursor:pointer; width:16px; height:16px;" />' +
+                  '<span style="' + (isConcluida ? 'text-decoration:line-through; opacity:0.6;' : '') + ' font-weight:500;">' + UI.escapeHtml(acao.titulo) + '</span>' +
+                  (isAcaoAtrasada ? '<span class="badge badge-error" style="font-size:0.68rem; padding:0.1rem 0.35rem;">Atrasada</span>' : '') +
+                '</div>' +
+                '<div style="display:flex; align-items:center; gap:0.75rem; font-size:0.78rem; color:var(--text-muted);">' +
+                  '<span>Prazo: ' + (acao.prazo || '—') + '</span>' +
+                  '<button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; padding:0 0.25rem;" title="Remover Ação" onclick="App.requestDeleteRecord(\'ACOES\', \'' + acao.id + '\', \'' + UI.escapeHtml(acao.titulo) + '\')">&times;</button>' +
+                '</div>' +
+              '</div>';
+          }
+        }
+
+        html += '</div></div>';
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function openCreateMetaModal() {
+      document.getElementById('meta-modal-title').textContent = 'Nova Meta SMART';
+      document.getElementById('meta-field-id').value = '';
+      document.getElementById('meta-field-titulo').value = '';
+      document.getElementById('meta-field-objetivo').value = '';
+      document.getElementById('meta-field-prioridade').value = 'media';
+      document.getElementById('meta-field-inicio').value = new Date().toISOString().split('T')[0];
+      document.getElementById('meta-field-prazo').value = '';
+      document.getElementById('meta-field-status').value = 'em_andamento';
+      document.getElementById('meta-field-indicador').value = '';
+      document.getElementById('meta-field-resultado').value = '';
+      document.getElementById('meta-field-descricao').value = '';
+      UI.openModal('modal-meta-form');
+    }
+
+    function openEditMetaModal(id) {
+      var item = state.metasList.find(function (m) { return m.id === id; });
+      if (!item) return;
+
+      document.getElementById('meta-modal-title').textContent = 'Editar Meta SMART';
+      document.getElementById('meta-field-id').value = item.id;
+      document.getElementById('meta-field-titulo').value = item.titulo || '';
+      document.getElementById('meta-field-objetivo').value = item.objetivo_relacionado || '';
+      document.getElementById('meta-field-prioridade').value = item.prioridade || 'media';
+      document.getElementById('meta-field-inicio').value = item.data_inicial || '';
+      document.getElementById('meta-field-prazo').value = item.prazo || '';
+      document.getElementById('meta-field-status').value = item.status || 'em_andamento';
+      document.getElementById('meta-field-indicador').value = item.indicador || '';
+      document.getElementById('meta-field-resultado').value = item.resultado_esperado || '';
+      document.getElementById('meta-field-descricao').value = item.descricao || '';
+      UI.openModal('modal-meta-form');
+    }
+
+    function saveMetaRecord() {
+      var btn = document.getElementById('btn-save-meta');
+      var id = document.getElementById('meta-field-id').value;
+      var titulo = document.getElementById('meta-field-titulo').value.trim();
+      var prazo = document.getElementById('meta-field-prazo').value;
+
+      if (!titulo || !prazo) {
+        UI.showToast('Campos Obrigatórios', 'Preencha o título e o prazo final da meta.', 'warning');
+        return;
+      }
+
+      var recordData = {
+        titulo: titulo,
+        objetivo_relacionado: document.getElementById('meta-field-objetivo').value.trim(),
+        prioridade: document.getElementById('meta-field-prioridade').value,
+        data_inicial: document.getElementById('meta-field-inicio').value,
+        prazo: prazo,
+        status: document.getElementById('meta-field-status').value,
+        indicador: document.getElementById('meta-field-indicador').value.trim(),
+        resultado_esperado: document.getElementById('meta-field-resultado').value.trim(),
+        descricao: document.getElementById('meta-field-descricao').value.trim()
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      var promise = id ? ApiClient.call('apiUpdateRecord', 'METAS', id, recordData) : ApiClient.call('apiCreateRecord', 'METAS', recordData);
+
+      promise
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-meta-form');
+          UI.showToast('Sucesso', 'Meta salva com sucesso!', 'success');
+          loadMetasList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    function openAddAcaoModal(metaId) {
+      document.getElementById('acao-field-meta-id').value = metaId;
+      document.getElementById('acao-field-id').value = '';
+      document.getElementById('acao-field-titulo').value = '';
+      document.getElementById('acao-field-prazo').value = '';
+      document.getElementById('acao-field-prioridade').value = 'alta';
+      document.getElementById('acao-field-status').value = 'a_fazer';
+      document.getElementById('acao-field-descricao').value = '';
+      UI.openModal('modal-acao-form');
+    }
+
+    function saveAcaoRecord() {
+      var btn = document.getElementById('btn-save-acao');
+      var metaId = document.getElementById('acao-field-meta-id').value;
+      var titulo = document.getElementById('acao-field-titulo').value.trim();
+
+      if (!titulo) {
+        UI.showToast('Campo Obrigatório', 'Informe o título da ação.', 'warning');
+        return;
+      }
+
+      var recordData = {
+        meta_id: metaId,
+        titulo: titulo,
+        prazo: document.getElementById('acao-field-prazo').value,
+        prioridade: document.getElementById('acao-field-prioridade').value,
+        status: document.getElementById('acao-field-status').value,
+        descricao: document.getElementById('acao-field-descricao').value.trim(),
+        origem_tipo: 'meta'
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      ApiClient.call('apiCreateRecord', 'ACOES', recordData)
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-acao-form');
+          UI.showToast('Ação Vinculada', 'Ação adicionada com sucesso à meta!', 'success');
+          loadMetasList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    function toggleAcaoStatus(acaoId, isChecked) {
+      var novoStatus = isChecked ? 'concluida' : 'a_fazer';
+      ApiClient.call('apiUpdateRecord', 'ACOES', acaoId, { status: novoStatus })
+        .then(function () {
+          UI.showToast('Ação Atualizada', 'Status alterado para ' + (isChecked ? 'Concluída' : 'A Fazer'), 'info', 2000);
+          loadMetasList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.showToast('Erro ao Atualizar', err.message, 'error');
+          loadMetasList();
+        });
+    }
+
+    /* ==========================================================================
+       4. MÓDULO: FEEDBACKS & CONVERSÃO EM AÇÕES
+       ========================================================================== */
+
+    function loadFeedbacksList() {
+      var container = document.getElementById('feedbacks-list-container');
+      if (container) {
+        container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner"></span> Carregando feedbacks...</div>';
+      }
+
+      ApiClient.call('apiListRecords', 'FEEDBACKS')
+        .then(function (records) {
+          state.feedbacksList = records || [];
+          filterFeedbacksList();
+        })
+        .catch(function (err) {
+          if (container) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color:var(--status-error);">Erro ao carregar feedbacks</div><div class="empty-state-desc">' + UI.escapeHtml(err.message) + '</div></div>';
+          }
+        });
+    }
+
+    function filterFeedbacksList() {
+      var searchInput = document.getElementById('feedbacks-search-input');
+      var statusSelect = document.getElementById('feedbacks-filter-status');
+
+      var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      var statusFilter = statusSelect ? statusSelect.value : 'todos';
+
+      var filtered = state.feedbacksList.filter(function (item) {
+        var matchStatus = (statusFilter === 'todos') || (item.status === statusFilter);
+        var textMatch = !query ||
+          (item.titulo && item.titulo.toLowerCase().indexOf(query) !== -1) ||
+          (item.origem && item.origem.toLowerCase().indexOf(query) !== -1) ||
+          (item.descricao && item.descricao.toLowerCase().indexOf(query) !== -1) ||
+          (item.pontos_fortes && item.pontos_fortes.toLowerCase().indexOf(query) !== -1) ||
+          (item.oportunidades_melhoria && item.oportunidades_melhoria.toLowerCase().indexOf(query) !== -1);
+
+        return matchStatus && textMatch;
+      });
+
+      renderFeedbacksCards(filtered);
+    }
+
+    function renderFeedbacksCards(list) {
+      var container = document.getElementById('feedbacks-list-container');
+      if (!container) return;
+
+      if (!list || list.length === 0) {
+        container.innerHTML = 
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+            '<div class="empty-state-title">Nenhum feedback registrado</div>' +
+            '<div class="empty-state-desc">Documente alinhamentos de liderança ou autoavaliações para transformá-los em evolução prática.</div>' +
+            '<button class="btn btn-primary btn-sm" onclick="App.openCreateFeedbackModal()">+ Registrar Feedback</button>' +
+          '</div>';
+        return;
+      }
+
+      var html = '<div style="display:flex; flex-direction:column; gap:1.25rem;">';
+      for (var i = 0; i < list.length; i++) {
+        var f = list[i];
+        var statusBadge = f.status === 'implementado' ? 'badge-success' : (f.status === 'em_acompanhamento' ? 'badge-violet' : 'badge-info');
+        var prioridadeBadge = f.prioridade === 'alta' ? 'badge-error' : (f.prioridade === 'media' ? 'badge-warning' : 'badge-info');
+
+        html += 
+          '<div class="content-card">' +
+            '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">' +
+              '<div>' +
+                '<div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">' +
+                  '<h2 style="font-size:1.15rem; font-weight:700; color:var(--text-primary);">' + UI.escapeHtml(f.titulo) + '</h2>' +
+                  '<span class="badge ' + statusBadge + '">' + (f.status || 'Novo').toUpperCase() + '</span>' +
+                  '<span class="badge ' + prioridadeBadge + '">' + (f.prioridade || 'Média') + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.83rem; color:var(--text-muted);">' +
+                  'Origem: <strong>' + UI.escapeHtml(f.origem || '—') + '</strong> &bull; Data: ' + (f.data || '—') + (f.contexto ? ' &bull; Contexto: ' + UI.escapeHtml(f.contexto) : '') +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex; gap:0.5rem; align-items:center;">' +
+                '<button class="btn btn-primary btn-sm" onclick="App.openConvertFeedbackModal(\'' + f.id + '\')">+ Criar Ação</button>' +
+                '<button class="btn btn-secondary btn-sm" onclick="App.openEditFeedbackModal(\'' + f.id + '\')">Editar</button>' +
+                '<button class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="App.requestDeleteRecord(\'FEEDBACKS\', \'' + f.id + '\', \'' + UI.escapeHtml(f.titulo) + '\')">Excluir</button>' +
+              '</div>' +
+            '</div>';
+
+        if (f.pontos_fortes || f.oportunidades_melhoria) {
+          html += '<div class="form-row" style="margin:1rem 0;">';
+          if (f.pontos_fortes) {
+            html += '<div style="background:var(--bg-surface-elevated); padding:0.85rem; border-radius:var(--radius-md); border-left:3px solid var(--status-success);">' +
+              '<div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--status-success); margin-bottom:0.35rem;">Pontos Fortes (Reconhecimento)</div>' +
+              '<div style="font-size:0.85rem; color:var(--text-primary); line-height:1.4;">' + UI.escapeHtml(f.pontos_fortes) + '</div>' +
+            '</div>';
+          }
+          if (f.oportunidades_melhoria) {
+            html += '<div style="background:var(--bg-surface-elevated); padding:0.85rem; border-radius:var(--radius-md); border-left:3px solid #f59e0b;">' +
+              '<div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#f59e0b; margin-bottom:0.35rem;">Oportunidades de Melhoria</div>' +
+              '<div style="font-size:0.85rem; color:var(--text-primary); line-height:1.4;">' + UI.escapeHtml(f.oportunidades_melhoria) + '</div>' +
+            '</div>';
+          }
+          html += '</div>';
+        }
+
+        if (f.acoes_acordadas) {
+          html += '<div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;"><strong>Ações Acordadas:</strong> ' + UI.escapeHtml(f.acoes_acordadas) + '</div>';
+        }
+
+        html += 
+            '<div style="font-size:0.78rem; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:0.6rem; margin-top:0.5rem;">' +
+              'Prazo de Follow-up: ' + (f.prazo_acompanhamento || 'Não agendado') +
+            '</div>' +
+          '</div>';
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function openCreateFeedbackModal() {
+      document.getElementById('feedback-modal-title').textContent = 'Registrar Feedback';
+      document.getElementById('feedback-field-id').value = '';
+      document.getElementById('feedback-field-titulo').value = '';
+      document.getElementById('feedback-field-origem').value = '';
+      document.getElementById('feedback-field-data').value = new Date().toISOString().split('T')[0];
+      document.getElementById('feedback-field-status').value = 'novo';
+      document.getElementById('feedback-field-prioridade').value = 'media';
+      document.getElementById('feedback-field-contexto').value = '';
+      document.getElementById('feedback-field-pontos-fortes').value = '';
+      document.getElementById('feedback-field-melhorias').value = '';
+      document.getElementById('feedback-field-acoes').value = '';
+      document.getElementById('feedback-field-prazo').value = '';
+      UI.openModal('modal-feedback-form');
+    }
+
+    function openEditFeedbackModal(id) {
+      var item = state.feedbacksList.find(function (f) { return f.id === id; });
+      if (!item) return;
+
+      document.getElementById('feedback-modal-title').textContent = 'Editar Feedback';
+      document.getElementById('feedback-field-id').value = item.id;
+      document.getElementById('feedback-field-titulo').value = item.titulo || '';
+      document.getElementById('feedback-field-origem').value = item.origem || '';
+      document.getElementById('feedback-field-data').value = item.data || '';
+      document.getElementById('feedback-field-status').value = item.status || 'novo';
+      document.getElementById('feedback-field-prioridade').value = item.prioridade || 'media';
+      document.getElementById('feedback-field-contexto').value = item.contexto || '';
+      document.getElementById('feedback-field-pontos-fortes').value = item.pontos_fortes || '';
+      document.getElementById('feedback-field-melhorias').value = item.oportunidades_melhoria || '';
+      document.getElementById('feedback-field-acoes').value = item.acoes_acordadas || '';
+      document.getElementById('feedback-field-prazo').value = item.prazo_acompanhamento || '';
+      UI.openModal('modal-feedback-form');
+    }
+
+    function saveFeedbackRecord() {
+      var btn = document.getElementById('btn-save-feedback');
+      var id = document.getElementById('feedback-field-id').value;
+      var titulo = document.getElementById('feedback-field-titulo').value.trim();
+      var origem = document.getElementById('feedback-field-origem').value.trim();
+      var data = document.getElementById('feedback-field-data').value;
+
+      if (!titulo || !origem || !data) {
+        UI.showToast('Campos Obrigatórios', 'Preencha o título, origem e data do feedback.', 'warning');
+        return;
+      }
+
+      var recordData = {
+        titulo: titulo,
+        origem: origem,
+        data: data,
+        status: document.getElementById('feedback-field-status').value,
+        prioridade: document.getElementById('feedback-field-prioridade').value,
+        contexto: document.getElementById('feedback-field-contexto').value.trim(),
+        pontos_fortes: document.getElementById('feedback-field-pontos-fortes').value.trim(),
+        oportunidades_melhoria: document.getElementById('feedback-field-melhorias').value.trim(),
+        acoes_acordadas: document.getElementById('feedback-field-acoes').value.trim(),
+        prazo_acompanhamento: document.getElementById('feedback-field-prazo').value
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      var promise = id ? ApiClient.call('apiUpdateRecord', 'FEEDBACKS', id, recordData) : ApiClient.call('apiCreateRecord', 'FEEDBACKS', recordData);
+
+      promise
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-feedback-form');
+          UI.showToast('Sucesso', 'Feedback salvo com sucesso!', 'success');
+          loadFeedbacksList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    function openConvertFeedbackModal(feedbackId) {
+      var fb = state.feedbacksList.find(function (f) { return f.id === feedbackId; });
+      if (!fb) return;
+
+      document.getElementById('convert-feedback-id').value = fb.id;
+      document.getElementById('convert-field-titulo').value = 'Implementar melhoria: ' + (fb.oportunidades_melhoria ? fb.oportunidades_melhoria.substring(0, 45) : fb.titulo);
+      document.getElementById('convert-field-prazo').value = fb.prazo_acompanhamento || '';
+      document.getElementById('convert-field-prioridade').value = fb.prioridade || 'alta';
+      document.getElementById('convert-field-descricao').value = 'Ação originada do feedback de ' + (fb.origem || 'origem') + ' em ' + (fb.data || '—') + ':\n' + (fb.oportunidades_melhoria || fb.titulo);
+
+      // Popula select de metas ativas
+      var metaSelect = document.getElementById('convert-field-meta-id');
+      if (metaSelect) {
+        metaSelect.innerHTML = '<option value="">Ação Avulsa (Sem meta vinculada)</option>';
+        for (var m = 0; m < state.metasList.length; m++) {
+          var meta = state.metasList[m];
+          metaSelect.innerHTML += '<option value="' + meta.id + '">' + UI.escapeHtml(meta.titulo) + '</option>';
+        }
+      }
+
+      UI.openModal('modal-feedback-convert');
+    }
+
+    function confirmConvertFeedback() {
+      var btn = document.getElementById('btn-convert-feedback');
+      var fbId = document.getElementById('convert-feedback-id').value;
+      var titulo = document.getElementById('convert-field-titulo').value.trim();
+
+      if (!titulo) {
+        UI.showToast('Campo Obrigatório', 'Informe o título da ação.', 'warning');
+        return;
+      }
+
+      var acaoData = {
+        titulo: titulo,
+        prazo: document.getElementById('convert-field-prazo').value,
+        prioridade: document.getElementById('convert-field-prioridade').value,
+        descricao: document.getElementById('convert-field-descricao').value.trim(),
+        meta_id: document.getElementById('convert-field-meta-id').value
+      };
+
+      UI.setLoading(btn, true, 'Convertendo...');
+      ApiClient.call('apiConvertFeedbackToAction', fbId, acaoData)
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-feedback-convert');
+          UI.showToast('Ação Criada!', 'Feedback atualizado para "Em Acompanhamento" e ação cadastrada no PDI!', 'success');
+          loadFeedbacksList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro na Conversão', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       5. MÓDULO: BIBLIOTECA 3D & SESSÕES DE LEITURA
+       ========================================================================== */
+
+    function loadLivrosList() {
+      var container3d = document.getElementById('bookshelf-view-3d');
+      var containerList = document.getElementById('livros-list-container');
+
+      if (container3d) container3d.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner"></span> Carregando estante 3D...</div>';
+
+      ApiClient.call('apiListRecords', 'LIVROS')
+        .then(function (records) {
+          state.livrosList = records || [];
+          filterLivrosList();
+        })
+        .catch(function (err) {
+          if (container3d) container3d.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color:var(--status-error);">Erro ao carregar estante</div><div class="empty-state-desc">' + UI.escapeHtml(err.message) + '</div></div>';
+        });
+    }
+
+    function setBookshelfView(viewMode) {
+      state.activeBookshelfView = viewMode;
+      var view3d = document.getElementById('bookshelf-view-3d');
+      var viewList = document.getElementById('bookshelf-view-list');
+      var btn3d = document.getElementById('btn-view-books-3d');
+      var btnList = document.getElementById('btn-view-books-list');
+
+      if (viewMode === '3d') {
+        if (view3d) view3d.style.display = 'block';
+        if (viewList) viewList.style.display = 'none';
+        if (btn3d) { btn3d.style.background = 'var(--accent-violet)'; btn3d.style.color = '#fff'; }
+        if (btnList) { btnList.style.background = 'transparent'; btnList.style.color = 'var(--text-secondary)'; }
+      } else {
+        if (view3d) view3d.style.display = 'none';
+        if (viewList) viewList.style.display = 'block';
+        if (btn3d) { btn3d.style.background = 'transparent'; btn3d.style.color = 'var(--text-secondary)'; }
+        if (btnList) { btnList.style.background = 'var(--accent-violet)'; btnList.style.color = '#fff'; }
+      }
+    }
+
+    function filterLivrosList() {
+      var searchInput = document.getElementById('livros-search-input');
+      var estanteSelect = document.getElementById('livros-filter-estante');
+
+      var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      var estanteFilter = estanteSelect ? estanteSelect.value : 'todos';
+
+      var filtered = state.livrosList.filter(function (item) {
+        var matchEstante = true;
+        if (estanteFilter === 'favoritos') {
+          matchEstante = Boolean(item.favorito);
+        } else if (estanteFilter !== 'todos') {
+          matchEstante = (item.status === estanteFilter || item.estante === estanteFilter);
+        }
+
+        var textMatch = !query ||
+          (item.titulo && item.titulo.toLowerCase().indexOf(query) !== -1) ||
+          (item.autor && item.autor.toLowerCase().indexOf(query) !== -1) ||
+          (item.categoria && item.categoria.toLowerCase().indexOf(query) !== -1);
+
+        return matchEstante && textMatch;
+      });
+
+      renderBookshelf3D(filtered);
+      renderLivrosCards(filtered);
+    }
+
+    function renderBookshelf3D(list) {
+      var stage = document.getElementById('bookshelf-view-3d');
+      if (!stage) return;
+
+      if (!list || list.length === 0) {
+        stage.innerHTML = 
+          '<div class="empty-state">' +
+            '<div class="empty-state-icon">' + UI.ICONS['info'] + '</div>' +
+            '<div class="empty-state-title">Nenhum livro na estante</div>' +
+            '<div class="empty-state-desc">Cadastre livros e leituras para compor sua estante interativa e acompanhar seus aprendizados.</div>' +
+            '<button class="btn btn-primary btn-sm" onclick="App.openCreateLivroModal()">+ Adicionar Primeiro Livro</button>' +
+          '</div>';
+        return;
+      }
+
+      // Agrupa livros por estantes lógicas
+      var shelves = [
+        { id: 'lendo', title: 'Lendo Agora 📖', items: list.filter(function(b) { return b.status === 'lendo'; }) },
+        { id: 'quero_ler', title: 'Quero Ler 🎯', items: list.filter(function(b) { return b.status === 'quero_ler' || !b.status; }) },
+        { id: 'concluido', title: 'Concluídos 🏆', items: list.filter(function(b) { return b.status === 'concluido'; }) }
+      ];
+
+      var html = '';
+      for (var s = 0; s < shelves.length; s++) {
+        var shelf = shelves[s];
+        if (shelf.items.length === 0) continue;
+
+        html += 
+          '<div class="bookshelf-shelf">' +
+            '<div class="shelf-tag">' + shelf.title + ' (' + shelf.items.length + ')</div>';
+
+        for (var b = 0; b < shelf.items.length; b++) {
+          var livro = shelf.items[b];
+          var cor = livro.capa_cor || '#3b82f6';
+          var isFav = Boolean(livro.favorito);
+
+          html += 
+            '<div class="book-item-3d" title="' + UI.escapeHtml(livro.titulo) + ' — ' + UI.escapeHtml(livro.autor) + '" onclick="App.openEditLivroModal(\'' + livro.id + '\')">' +
+              '<div class="book-item-spine" style="background:' + cor + ';">' +
+                (isFav ? '<div class="book-ribbon"></div>' : '') +
+                '<span class="book-spine-text">' + UI.escapeHtml(livro.titulo) + '</span>' +
+                '<span class="book-spine-author">' + UI.escapeHtml(livro.autor) + '</span>' +
+              '</div>' +
+            '</div>';
+        }
+
+        html += '</div>';
+      }
+
+      if (!html) {
+        html = '<div class="empty-state"><div class="empty-state-title">Nenhum livro para o filtro selecionado</div></div>';
+      }
+
+      stage.innerHTML = html;
+    }
+
+    function renderLivrosCards(list) {
+      var container = document.getElementById('livros-list-container');
+      if (!container) return;
+
+      var html = '';
+      for (var i = 0; i < list.length; i++) {
+        var livro = list[i];
+        var total = Number(livro.total_paginas) || 1;
+        var atual = Number(livro.pagina_atual) || 0;
+        var pct = Math.min(100, Math.round((atual / total) * 100));
+        var cor = livro.capa_cor || '#3b82f6';
+
+        html += 
+          '<div class="skill-card">' +
+            '<div class="skill-card-top">' +
+              '<div style="display:flex; align-items:center; gap:0.6rem;">' +
+                '<div style="width:16px; height:24px; border-radius:2px; background:' + cor + '; flex-shrink:0;"></div>' +
+                '<div>' +
+                  '<div class="skill-name">' + UI.escapeHtml(livro.titulo) + '</div>' +
+                  '<div class="skill-category">' + UI.escapeHtml(livro.autor) + ' &bull; ' + UI.escapeHtml(livro.categoria || 'Geral') + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div>' + (livro.favorito ? '<span title="Favorito">⭐</span>' : '') + '</div>' +
+            '</div>' +
+
+            '<div style="margin:0.75rem 0;">' +
+              '<div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;">' +
+                '<span>Progresso: ' + pct + '%</span>' +
+                '<span>' + atual + ' / ' + total + ' páginas</span>' +
+              '</div>' +
+              '<div class="skill-track">' +
+                '<div class="skill-fill-current" style="width:' + pct + '%; background:' + cor + ';"></div>' +
+              '</div>' +
+            '</div>' +
+
+            (livro.principais_aprendizados ? '<div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.75rem; background:var(--bg-surface-elevated); padding:0.5rem; border-radius:var(--radius-sm);"><strong>Aprendizado:</strong> ' + UI.escapeHtml(livro.principais_aprendizados) + '</div>' : '') +
+
+            '<div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-subtle); padding-top:0.75rem; margin-top:0.5rem;">' +
+              '<button class="btn btn-outline btn-sm" onclick="App.openSessaoLeituraModal(\'' + livro.id + '\')">Registrar Leitura</button>' +
+              '<div style="display:flex; gap:0.4rem;">' +
+                '<button class="btn btn-secondary btn-sm" onclick="App.openEditLivroModal(\'' + livro.id + '\')">Editar</button>' +
+                '<button class="btn btn-outline btn-sm" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="App.requestDeleteRecord(\'LIVROS\', \'' + livro.id + '\', \'' + UI.escapeHtml(livro.titulo) + '\')">Excluir</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function openCreateLivroModal() {
+      document.getElementById('livro-modal-title').textContent = 'Adicionar Livro';
+      document.getElementById('livro-field-id').value = '';
+      document.getElementById('livro-field-titulo').value = '';
+      document.getElementById('livro-field-autor').value = '';
+      document.getElementById('livro-field-categoria').value = '';
+      document.getElementById('livro-field-cor').value = '#3b82f6';
+      document.getElementById('livro-field-paginas').value = '';
+      document.getElementById('livro-field-pagina-atual').value = '0';
+      document.getElementById('livro-field-status').value = 'quero_ler';
+      document.getElementById('livro-field-avaliacao').value = '0';
+      document.getElementById('livro-field-favorito').checked = false;
+      document.getElementById('livro-field-resumo').value = '';
+      document.getElementById('livro-field-aprendizados').value = '';
+      UI.openModal('modal-livro-form');
+    }
+
+    function openEditLivroModal(id) {
+      var item = state.livrosList.find(function (l) { return l.id === id; });
+      if (!item) return;
+
+      document.getElementById('livro-modal-title').textContent = 'Editar Livro';
+      document.getElementById('livro-field-id').value = item.id;
+      document.getElementById('livro-field-titulo').value = item.titulo || '';
+      document.getElementById('livro-field-autor').value = item.autor || '';
+      document.getElementById('livro-field-categoria').value = item.categoria || '';
+      document.getElementById('livro-field-cor').value = item.capa_cor || '#3b82f6';
+      document.getElementById('livro-field-paginas').value = item.total_paginas || '';
+      document.getElementById('livro-field-pagina-atual').value = item.pagina_atual || '0';
+      document.getElementById('livro-field-status').value = item.status || 'quero_ler';
+      document.getElementById('livro-field-avaliacao').value = item.avaliacao_pessoal || '0';
+      document.getElementById('livro-field-favorito').checked = Boolean(item.favorito);
+      document.getElementById('livro-field-resumo').value = item.resumo || '';
+      document.getElementById('livro-field-aprendizados').value = item.principais_aprendizados || '';
+      UI.openModal('modal-livro-form');
+    }
+
+    function saveLivroRecord() {
+      var btn = document.getElementById('btn-save-livro');
+      var id = document.getElementById('livro-field-id').value;
+      var titulo = document.getElementById('livro-field-titulo').value.trim();
+      var autor = document.getElementById('livro-field-autor').value.trim();
+      var totalPaginas = Number(document.getElementById('livro-field-paginas').value);
+      var pagAtual = Number(document.getElementById('livro-field-pagina-atual').value) || 0;
+
+      if (!titulo || !autor || !totalPaginas) {
+        UI.showToast('Campos Obrigatórios', 'Preencha o título, autor e total de páginas.', 'warning');
+        return;
+      }
+
+      var pct = Math.min(100, Math.round((pagAtual / totalPaginas) * 100));
+
+      var recordData = {
+        titulo: titulo,
+        autor: autor,
+        categoria: document.getElementById('livro-field-categoria').value.trim(),
+        capa_cor: document.getElementById('livro-field-cor').value,
+        total_paginas: totalPaginas,
+        pagina_atual: pagAtual,
+        percentual_leitura: pct,
+        status: document.getElementById('livro-field-status').value,
+        avaliacao_pessoal: Number(document.getElementById('livro-field-avaliacao').value) || 0,
+        favorito: document.getElementById('livro-field-favorito').checked,
+        resumo: document.getElementById('livro-field-resumo').value.trim(),
+        principais_aprendizados: document.getElementById('livro-field-aprendizados').value.trim(),
+        estante: document.getElementById('livro-field-status').value
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      var promise = id ? ApiClient.call('apiUpdateRecord', 'LIVROS', id, recordData) : ApiClient.call('apiCreateRecord', 'LIVROS', recordData);
+
+      promise
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-livro-form');
+          UI.showToast('Sucesso', 'Livro salvo na sua estante!', 'success');
+          loadLivrosList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    function openSessaoLeituraModal(livroId) {
+      var item = state.livrosList.find(function (l) { return l.id === livroId; });
+      if (!item) return;
+
+      document.getElementById('sessao-field-livro-id').value = item.id;
+      document.getElementById('sessao-livro-titulo').textContent = item.titulo;
+      var pagAtual = Number(item.pagina_atual) || 0;
+      var total = Number(item.total_paginas) || 1;
+      var pct = Math.min(100, Math.round((pagAtual / total) * 100));
+      document.getElementById('sessao-livro-info').textContent = 'Página Atual: ' + pagAtual + ' / ' + total + ' (' + pct + '%)';
+
+      document.getElementById('sessao-field-pagina-final').value = pagAtual;
+      document.getElementById('sessao-field-duracao').value = '30';
+      document.getElementById('sessao-field-notas').value = '';
+
+      UI.openModal('modal-leitura-sessao');
+    }
+
+    function saveSessaoLeitura() {
+      var btn = document.getElementById('btn-save-sessao');
+      var livroId = document.getElementById('sessao-field-livro-id').value;
+      var pagFinal = Number(document.getElementById('sessao-field-pagina-final').value);
+      var duracao = Number(document.getElementById('sessao-field-duracao').value) || 0;
+      var notas = document.getElementById('sessao-field-notas').value.trim();
+
+      if (!pagFinal || pagFinal <= 0) {
+        UI.showToast('Campo Obrigatório', 'Informe a página final alcançada.', 'warning');
+        return;
+      }
+
+      var item = state.livrosList.find(function (l) { return l.id === livroId; });
+      var pagAnterior = item ? (Number(item.pagina_atual) || 0) : 0;
+      var lidas = Math.max(0, pagFinal - pagAnterior);
+
+      var sessaoData = {
+        livro_id: livroId,
+        pagina_final: pagFinal,
+        paginas_lidas: lidas,
+        duracao_minutos: duracao,
+        notas_sessao: notas
+      };
+
+      UI.setLoading(btn, true, 'Registrando...');
+      ApiClient.call('apiUpdateLivroLeitura', sessaoData)
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-leitura-sessao');
+          UI.showToast('Progresso Atualizado!', 'Sessão de leitura registrada com sucesso na aba LEITURAS!', 'success');
+          loadLivrosList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       6. EXCLUSÃO SEGURA COM CONFIRMAÇÃO
+       ========================================================================== */
+
+    function requestDeleteRecord(table, id, name) {
+      state.deleteInfo = { table: table, id: id, name: name };
+      var msgEl = document.getElementById('delete-confirm-message');
+      if (msgEl) {
+        msgEl.innerHTML = 'Tem certeza de que deseja excluir o registro <strong>"' + UI.escapeHtml(name) + '"</strong> da tabela <strong>' + table + '</strong>?';
+      }
+      UI.openModal('modal-confirm-delete');
+    }
+
+    function executeDeleteRecord() {
+      var btn = document.getElementById('btn-confirm-delete-execute');
+      var info = state.deleteInfo;
+      if (!info.table || !info.id) return;
+
+      UI.setLoading(btn, true, 'Excluindo...');
+      ApiClient.call('apiDeleteRecord', info.table, info.id, true)
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-confirm-delete');
+          UI.showToast('Registro Removido', 'Registro excluído e arquivado com segurança!', 'success');
+
+          // Recarrega módulo ativo
+          if (info.table === 'PLANOS_PDI') loadPdiList();
+          if (info.table === 'COMPETENCIAS') loadSkillsList();
+          if (info.table === 'METAS' || info.table === 'ACOES') loadMetasList();
+          if (info.table === 'FEEDBACKS') loadFeedbacksList();
+          if (info.table === 'LIVROS') loadLivrosList();
+
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Excluir', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       7. CRIAÇÃO RÁPIDA (MODAL GLOBAL)
+       ========================================================================== */
+
+    function saveQuickRecord() {
+      var btn = document.getElementById('btn-save-quick-record');
+      var targetTable = document.getElementById('quick-target-module').value;
+      var title = document.getElementById('quick-title').value.trim();
+      var desc = document.getElementById('quick-desc').value.trim();
+
+      if (!title) {
+        UI.showToast('Campo Obrigatório', 'Informe o título do registro.', 'warning');
+        return;
+      }
 
       var recordData = {};
-      if (targetTable === 'METAS') {
+      var hoje = new Date().toISOString().split('T')[0];
+
+      if (targetTable === 'PLANOS_PDI') {
+        recordData = {
+          titulo: title,
+          cargo_desejado: 'A definir',
+          objetivo_profissional: desc || title,
+          data_inicio: hoje,
+          status: 'ativo'
+        };
+      } else if (targetTable === 'METAS') {
         recordData = {
           titulo: title,
           descricao: desc,
-          data_inicial: new Date().toISOString().split('T')[0],
+          data_inicial: hoje,
           prazo: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
           prioridade: 'media',
           status: 'em_andamento'
@@ -212,14 +1731,14 @@
           descricao: desc,
           prazo: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
           prioridade: 'alta',
-          status: 'em_progresso',
+          status: 'a_fazer',
           origem_tipo: 'avulsa'
         };
       } else if (targetTable === 'FEEDBACKS') {
         recordData = {
           titulo: title,
           descricao: desc,
-          data: new Date().toISOString().split('T')[0],
+          data: hoje,
           origem: 'Autoavaliação',
           status: 'novo',
           prioridade: 'media'
@@ -237,222 +1756,245 @@
       } else if (targetTable === 'LIVROS') {
         recordData = {
           titulo: title,
+          autor: 'Autor a definir',
           resumo: desc,
           status: 'quero_ler',
-          total_paginas: 300,
+          total_paginas: 250,
           pagina_atual: 0,
           percentual_leitura: 0,
-          estante: 'quero_ler',
-          favorito: false
+          capa_cor: '#3b82f6',
+          estante: 'quero_ler'
         };
       }
 
+      UI.setLoading(btn, true, 'Salvando...');
       ApiClient.call('apiCreateRecord', targetTable, recordData)
-        .then(function (created) {
-          UI.setLoading(btnSave, false);
+        .then(function () {
+          UI.setLoading(btn, false);
           UI.closeModal('modal-quick-create');
-          UI.showToast('Registro Gravado!', 'Item salvo com sucesso na aba ' + targetTable + ' da sua planilha.', 'success');
+          UI.showToast('Registro Gravado!', 'Item salvo na aba ' + targetTable + ' do seu Google Sheets.', 'success');
 
-          // Limpa o formulário
-          if (titleInput) titleInput.value = '';
-          if (descInput) descInput.value = '';
+          document.getElementById('quick-title').value = '';
+          document.getElementById('quick-desc').value = '';
 
-          // Atualiza as métricas da interface
+          // Atualiza a visão correspondente
+          loadDashboardData();
+          if (state.activePane === 'pane-pdi') loadPdiList();
+          if (state.activePane === 'pane-skills') loadSkillsList();
+          if (state.activePane === 'pane-metas') loadMetasList();
+          if (state.activePane === 'pane-feedbacks') loadFeedbacksList();
+          if (state.activePane === 'pane-biblioteca') loadLivrosList();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       8. DIAGNÓSTICO DO BANCO & PERSISTÊNCIA (PRESERVADO DA FASE 1)
+       ========================================================================== */
+
+    function checkDatabaseConnection(btnElement) {
+      var statusBadge = document.getElementById('db-status-badge');
+      var statusDot = document.getElementById('db-status-dot');
+      var statusText = document.getElementById('db-status-text');
+      var dbMetricsGrid = document.getElementById('db-metrics-grid');
+      var unconfiguredBanner = document.getElementById('unconfigured-banner');
+
+      if (btnElement) UI.setLoading(btnElement, true, 'Carregando...');
+
+      ApiClient.call('apiGetDatabaseStatus')
+        .then(function (status) {
+          if (btnElement) UI.setLoading(btnElement, false);
+
+          if (status.configured && status.status === 'CONECTADO') {
+            if (statusDot) statusDot.className = 'status-dot active';
+            if (statusBadge) statusBadge.className = 'badge badge-success';
+            if (statusText) statusText.textContent = 'Conectado';
+
+            if (unconfiguredBanner) unconfiguredBanner.style.display = 'none';
+            if (dbMetricsGrid) dbMetricsGrid.style.display = 'grid';
+
+            var totalSheetsEl = document.getElementById('metric-total-sheets');
+            if (totalSheetsEl) totalSheetsEl.textContent = status.totalSheets || '15';
+
+            var emailEl = document.getElementById('metric-user-email');
+            if (emailEl) emailEl.textContent = status.currentUser || '—';
+
+            var nameEl = document.getElementById('metric-sheet-name');
+            if (nameEl) nameEl.textContent = status.spreadsheetName || 'Elevare PDI';
+
+            var linkEl = document.getElementById('metric-sheet-link');
+            if (linkEl && status.spreadsheetUrl) {
+              linkEl.href = status.spreadsheetUrl;
+              linkEl.style.display = 'inline-flex';
+            }
+
+            renderSheetsTable(status.sheets);
+          } else {
+            if (statusDot) statusDot.className = 'status-dot pending';
+            if (statusBadge) statusBadge.className = 'badge badge-warning';
+            if (statusText) statusText.textContent = 'Não Inicializado';
+
+            if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
+            if (dbMetricsGrid) dbMetricsGrid.style.display = 'none';
+          }
+        })
+        .catch(function () {
+          if (btnElement) UI.setLoading(btnElement, false);
+          if (statusDot) statusDot.className = 'status-dot error';
+          if (statusBadge) statusBadge.className = 'badge badge-error';
+          if (statusText) statusText.textContent = 'Erro';
+        });
+    }
+
+    function renderSheetsTable(sheets) {
+      var tbody = document.getElementById('sheets-table-body');
+      if (!tbody) return;
+
+      if (!sheets || sheets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">Nenhuma aba encontrada.</td></tr>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < sheets.length; i++) {
+        var s = sheets[i];
+        html += 
+          '<tr style="border-bottom: 1px solid var(--border-subtle);">' +
+            '<td style="padding: 0.75rem 1rem;"><strong>' + UI.escapeHtml(s.name) + '</strong></td>' +
+            '<td style="padding: 0.75rem 1rem;"><span class="badge badge-info">' + s.rows + ' registros</span></td>' +
+            '<td style="padding: 0.75rem 1rem; color:var(--text-secondary);">' + s.cols + ' colunas</td>' +
+            '<td style="padding: 0.75rem 1rem;"><span class="badge badge-success">OK</span></td>' +
+          '</tr>';
+      }
+      tbody.innerHTML = html;
+    }
+
+    function runSetupDatabase(btnElement) {
+      if (!confirm('Deseja inicializar o banco de dados agora? As abas estruturadas serão criadas na sua planilha do Google Drive.')) {
+        return;
+      }
+
+      UI.setLoading(btnElement, true, 'Configurando...');
+      ApiClient.call('apiSetup')
+        .then(function (result) {
+          UI.setLoading(btnElement, false);
+          UI.showToast('Instalação Concluída', 'Banco configurado com ' + result.totalSheets + ' abas no seu Google Drive.', 'success', 6000);
           checkDatabaseConnection();
         })
         .catch(function (err) {
-          UI.setLoading(btnSave, false);
-          UI.showToast('Erro ao Salvar', err.message, 'error');
+          UI.setLoading(btnElement, false);
+          UI.showToast('Falha na Configuração', err.message, 'error', 8000);
         });
-    });
-  }
-
-  /**
-   * Verifica a conexão real com o Google Sheets e atualiza os KPIs do Dashboard.
-   */
-  function checkDatabaseConnection(btnElement) {
-    var statusBadge = document.getElementById('db-status-badge');
-    var statusDot = document.getElementById('db-status-dot');
-    var statusText = document.getElementById('db-status-text');
-    var dbMetricsGrid = document.getElementById('db-metrics-grid');
-    var unconfiguredBanner = document.getElementById('unconfigured-banner');
-
-    if (btnElement) UI.setLoading(btnElement, true, 'Carregando...');
-
-    ApiClient.call('apiGetDatabaseStatus')
-      .then(function (status) {
-        if (btnElement) UI.setLoading(btnElement, false);
-
-        if (status.configured && status.status === 'CONECTADO') {
-          if (statusDot) statusDot.className = 'status-dot active';
-          if (statusBadge) statusBadge.className = 'badge badge-success';
-          if (statusText) statusText.textContent = 'Conectado';
-
-          if (unconfiguredBanner) unconfiguredBanner.style.display = 'none';
-          if (dbMetricsGrid) dbMetricsGrid.style.display = 'grid';
-
-          var totalSheetsEl = document.getElementById('metric-total-sheets');
-          if (totalSheetsEl) totalSheetsEl.textContent = status.totalSheets || '15';
-
-          var emailEl = document.getElementById('metric-user-email');
-          if (emailEl) emailEl.textContent = status.currentUser || '—';
-
-          var nameEl = document.getElementById('metric-sheet-name');
-          if (nameEl) nameEl.textContent = status.spreadsheetName || 'Elevare PDI';
-
-          var linkEl = document.getElementById('metric-sheet-link');
-          if (linkEl && status.spreadsheetUrl) {
-            linkEl.href = status.spreadsheetUrl;
-            linkEl.style.display = 'inline-flex';
-          }
-
-          // Renderiza a tabela de diagnóstico das abas
-          renderSheetsTable(status.sheets);
-
-          // Atualiza contadores reais dos KPIs
-          updateDashboardKPIs(status.sheets);
-        } else {
-          if (statusDot) statusDot.className = 'status-dot pending';
-          if (statusBadge) statusBadge.className = 'badge badge-warning';
-          if (statusText) statusText.textContent = 'Não Inicializado';
-
-          if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
-          if (dbMetricsGrid) dbMetricsGrid.style.display = 'none';
-        }
-      })
-      .catch(function (err) {
-        if (btnElement) UI.setLoading(btnElement, false);
-        if (statusDot) statusDot.className = 'status-dot error';
-        if (statusBadge) statusBadge.className = 'badge badge-error';
-        if (statusText) statusText.textContent = 'Erro';
-
-        if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
-      });
-  }
-
-  /**
-   * Atualiza os KPIs do Dashboard com base nos registros reais das abas.
-   */
-  function updateDashboardKPIs(sheets) {
-    if (!sheets || !Array.isArray(sheets)) return;
-
-    var counts = {};
-    for (var i = 0; i < sheets.length; i++) {
-      counts[sheets[i].name] = sheets[i].rows;
     }
 
-    var kpiMetasAndamento = document.getElementById('kpi-metas-andamento');
-    if (kpiMetasAndamento) kpiMetasAndamento.textContent = counts['METAS'] || 0;
+    function runPersistenceTest(btnElement) {
+      var consoleBox = document.getElementById('test-console-output');
+      var noteInput = document.getElementById('test-note-input');
+      var testNote = noteInput ? noteInput.value : '';
 
-    var kpiFeedbacks = document.getElementById('kpi-feedbacks-total');
-    if (kpiFeedbacks) kpiFeedbacks.textContent = counts['FEEDBACKS'] || 0;
+      UI.setLoading(btnElement, true, 'Executando 7 Testes...');
+      if (consoleBox) {
+        consoleBox.textContent = '⏳ Executando bateria completa de 7 testes de persistência real no Google Sheets...\n- Comunicando via google.script.run...\n- Aguardando execução do LockService e SpreadsheetApp...\n';
+      }
 
-    var kpiLivros = document.getElementById('kpi-livros-total');
-    if (kpiLivros) kpiLivros.textContent = counts['LIVROS'] || 0;
-  }
+      ApiClient.call('apiRunFullPersistenceValidation', testNote)
+        .then(function (res) {
+          UI.setLoading(btnElement, false);
+          UI.showToast('Persistência 100% Aprovada!', 'Todos os 7 testes foram validados no Google Sheets.', 'success', 6000);
 
-  /**
-   * Executa a inicialização das 15 abas.
-   */
-  function runSetupDatabase(btnElement) {
-    if (!confirm('Deseja inicializar o banco de dados agora? As 15 abas estruturadas serão criadas na sua planilha do Google Drive.')) {
-      return;
-    }
+          if (consoleBox) {
+            var log = '=====================================================\n';
+            log += '✅ BATERIA DE TESTES DE PERSISTÊNCIA: 100% APROVADA\n';
+            log += '=====================================================\n';
+            log += 'Horário: ' + res.timestamp + '\n';
+            log += 'Planilha: ' + (res.spreadsheetUrl || 'Vinculada com sucesso') + '\n\n';
 
-    UI.setLoading(btnElement, true, 'Configurando...');
-    ApiClient.call('apiSetup')
-      .then(function (result) {
-        UI.setLoading(btnElement, false);
-        UI.showToast('Instalação Concluída', 'Banco configurado com ' + result.totalSheets + ' abas no seu Google Drive.', 'success', 6000);
-        checkDatabaseConnection();
-      })
-      .catch(function (err) {
-        UI.setLoading(btnElement, false);
-        UI.showToast('Falha na Configuração', err.message, 'error', 8000);
-      });
-  }
-
-  /**
-   * Executa a bateria de 7 testes de persistência real no Google Sheets.
-   */
-  function runPersistenceTest(btnElement) {
-    var consoleBox = document.getElementById('test-console-output');
-    var noteInput = document.getElementById('test-note-input');
-    var testNote = noteInput ? noteInput.value : '';
-
-    UI.setLoading(btnElement, true, 'Executando 7 Testes...');
-    if (consoleBox) {
-      consoleBox.textContent = '⏳ Executando bateria completa de 7 testes de persistência real no Google Sheets...\n- Comunicando via google.script.run...\n- Aguardando execução do LockService e SpreadsheetApp...\n';
-    }
-
-    ApiClient.call('apiRunFullPersistenceValidation', testNote)
-      .then(function (res) {
-        UI.setLoading(btnElement, false);
-        UI.showToast('Persistência 100% Aprovada!', 'Todos os 7 testes foram validados no Google Sheets.', 'success', 6000);
-
-        if (consoleBox) {
-          var log = '=====================================================\n';
-          log += '✅ BATERIA DE TESTES DE PERSISTÊNCIA: 100% APROVADA\n';
-          log += '=====================================================\n';
-          log += 'Horário: ' + res.timestamp + '\n';
-          log += 'Planilha: ' + (res.spreadsheetUrl || 'Vinculada com sucesso') + '\n\n';
-
-          if (res.tests && Array.isArray(res.tests)) {
-            for (var i = 0; i < res.tests.length; i++) {
-              var t = res.tests[i];
-              log += '[' + t.step + '/7] ✅ ' + t.name.toUpperCase() + '\n';
-              log += '      Detalhe: ' + t.detail + '\n\n';
+            if (res.tests && Array.isArray(res.tests)) {
+              for (var i = 0; i < res.tests.length; i++) {
+                var t = res.tests[i];
+                log += '[' + t.step + '/7] ✅ ' + t.name.toUpperCase() + '\n';
+                log += '      Detalhe: ' + t.detail + '\n\n';
+              }
             }
+
+            log += '=====================================================\n';
+            log += 'RESULTADO: O Google Sheets está apto para suportar o PDI!\n';
+            log += 'Nenhum dado real foi corrompido ou modificado.\n';
+            log += '=====================================================';
+
+            consoleBox.textContent = log;
           }
 
-          log += '=====================================================\n';
-          log += 'RESULTADO: O Google Sheets está apto para suportar o PDI!\n';
-          log += 'Nenhum dado real foi corrompido ou modificado.\n';
-          log += '=====================================================';
+          checkDatabaseConnection();
+        })
+        .catch(function (err) {
+          UI.setLoading(btnElement, false);
+          UI.showToast('Falha no Teste', err.message, 'error', 8000);
 
-          consoleBox.textContent = log;
-        }
-
-        checkDatabaseConnection();
-      })
-      .catch(function (err) {
-        UI.setLoading(btnElement, false);
-        UI.showToast('Falha no Teste', err.message, 'error', 8000);
-
-        if (consoleBox) {
-          consoleBox.textContent = 
-            '=====================================================\n' +
-            '❌ FALHA NA PERSISTÊNCIA REAL:\n' +
-            '=====================================================\n' +
-            err.message + '\n\n' +
-            'Sugestão: Verifique se a função setupApplication() foi executada e se você concedeu as permissões ao Apps Script.';
-        }
-      });
-  }
-
-  /**
-   * Renderiza a tabela de diagnóstico das abas.
-   */
-  function renderSheetsTable(sheets) {
-    var tbody = document.getElementById('sheets-table-body');
-    if (!tbody) return;
-
-    if (!sheets || sheets.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">Nenhuma aba encontrada.</td></tr>';
-      return;
+          if (consoleBox) {
+            consoleBox.textContent = 
+              '=====================================================\n' +
+              '❌ FALHA NA PERSISTÊNCIA REAL:\n' +
+              '=====================================================\n' +
+              err.message + '\n\n' +
+              'Sugestão: Verifique se a função setupApplication() foi executada e se você concedeu as permissões ao Apps Script.';
+          }
+        });
     }
 
-    var html = '';
-    for (var i = 0; i < sheets.length; i++) {
-      var s = sheets[i];
-      html += 
-        '<tr style="border-bottom: 1px solid var(--border-subtle);">' +
-          '<td style="padding: 0.75rem 1rem;"><strong>' + UI.escapeHtml(s.name) + '</strong></td>' +
-          '<td style="padding: 0.75rem 1rem;"><span class="badge badge-info">' + s.rows + ' registros</span></td>' +
-          '<td style="padding: 0.75rem 1rem; color:var(--text-secondary);">' + s.cols + ' colunas</td>' +
-          '<td style="padding: 0.75rem 1rem;"><span class="badge badge-success">OK</span></td>' +
-        '</tr>';
-    }
-    tbody.innerHTML = html;
-  }
+    // Inicialização ao carregar o DOM
+    document.addEventListener('DOMContentLoaded', init);
+
+    return {
+      init: init,
+      switchPane: switchPane,
+      // PDI
+      loadPdiList: loadPdiList,
+      filterPdiList: filterPdiList,
+      openCreatePdiModal: openCreatePdiModal,
+      openEditPdiModal: openEditPdiModal,
+      savePdiRecord: savePdiRecord,
+      // Skills
+      loadSkillsList: loadSkillsList,
+      filterSkillsList: filterSkillsList,
+      openCreateSkillModal: openCreateSkillModal,
+      openEditSkillModal: openEditSkillModal,
+      saveSkillRecord: saveSkillRecord,
+      openEvaluateSkillModal: openEvaluateSkillModal,
+      selectEvalLevel: selectEvalLevel,
+      saveEvaluationRecord: saveEvaluationRecord,
+      // Metas
+      loadMetasList: loadMetasList,
+      filterMetasList: filterMetasList,
+      openCreateMetaModal: openCreateMetaModal,
+      openEditMetaModal: openEditMetaModal,
+      saveMetaRecord: saveMetaRecord,
+      openAddAcaoModal: openAddAcaoModal,
+      saveAcaoRecord: saveAcaoRecord,
+      toggleAcaoStatus: toggleAcaoStatus,
+      // Feedbacks
+      loadFeedbacksList: loadFeedbacksList,
+      filterFeedbacksList: filterFeedbacksList,
+      openCreateFeedbackModal: openCreateFeedbackModal,
+      openEditFeedbackModal: openEditFeedbackModal,
+      saveFeedbackRecord: saveFeedbackRecord,
+      openConvertFeedbackModal: openConvertFeedbackModal,
+      confirmConvertFeedback: confirmConvertFeedback,
+      // Livros / Biblioteca 3D
+      loadLivrosList: loadLivrosList,
+      setBookshelfView: setBookshelfView,
+      filterLivrosList: filterLivrosList,
+      openCreateLivroModal: openCreateLivroModal,
+      openEditLivroModal: openEditLivroModal,
+      saveLivroRecord: saveLivroRecord,
+      openSessaoLeituraModal: openSessaoLeituraModal,
+      saveSessaoLeitura: saveSessaoLeitura,
+      // Exclusão Segura
+      requestDeleteRecord: requestDeleteRecord,
+      executeDeleteRecord: executeDeleteRecord
+    };
+  })();
 </script>
