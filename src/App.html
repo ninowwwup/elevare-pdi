@@ -144,35 +144,47 @@
   }
 
   /**
-   * Executa teste real de gravação e leitura no Google Sheets.
+   * Executa a bateria de 7 testes de persistência real no Google Sheets.
    */
   function runPersistenceTest(btnElement) {
     var consoleBox = document.getElementById('test-console-output');
     var noteInput = document.getElementById('test-note-input');
     var testNote = noteInput ? noteInput.value : '';
 
-    UI.setLoading(btnElement, true, 'Gravando e Lendo...');
+    UI.setLoading(btnElement, true, 'Executando 7 Testes...');
     if (consoleBox) {
-      consoleBox.textContent = '⏳ Iniciando teste de ciclo de vida completo...\n- Enviando requisição de gravação via google.script.run...\n';
+      consoleBox.textContent = '⏳ Iniciando bateria completa de 7 testes de persistência real no Google Sheets...\n- Comunicando via google.script.run...\n- Aguardando execução do LockService e SpreadsheetApp...\n';
     }
 
-    ApiClient.call('apiRunPersistenceTest', testNote)
+    ApiClient.call('apiRunFullPersistenceValidation', testNote)
       .then(function (res) {
         UI.setLoading(btnElement, false);
-        UI.showToast('Persistência Validada!', 'Registro gravado e lido do Google Sheets com sucesso.', 'success');
+        UI.showToast('Persistência 100% Aprovada!', 'Todos os 7 testes de ciclo de vida foram validados no Google Sheets.', 'success', 6000);
 
         if (consoleBox) {
-          consoleBox.textContent = 
-            '✅ SUCESSO: Persistência real confirmada!\n\n' +
-            'Timestamp: ' + res.timestamp + '\n' +
-            'Planilha: ' + res.spreadsheetUrl + '\n\n' +
-            '--- REGISTRO GRAVADO NO SHEETS ---\n' +
-            JSON.stringify(res.insertedRecord, null, 2) + '\n\n' +
-            '--- REGISTRO LIDO IMEDIATAMENTE PELO ID ---\n' +
-            JSON.stringify(res.readRecord, null, 2);
+          var log = '=====================================================\n';
+          log += '✅ BATERIA DE TESTES DE PERSISTÊNCIA: 100% APROVADA\n';
+          log += '=====================================================\n';
+          log += 'Horário: ' + res.timestamp + '\n';
+          log += 'Planilha: ' + (res.spreadsheetUrl || 'Vinculada com sucesso') + '\n\n';
+
+          if (res.tests && Array.isArray(res.tests)) {
+            for (var i = 0; i < res.tests.length; i++) {
+              var t = res.tests[i];
+              log += '[' + t.step + '/7] ✅ ' + t.name.toUpperCase() + '\n';
+              log += '      Detalhe: ' + t.detail + '\n\n';
+            }
+          }
+
+          log += '=====================================================\n';
+          log += 'RESULTADO: O Google Sheets está apto para suportar o PDI!\n';
+          log += 'Nenhum dado real foi corrompido ou modificado.\n';
+          log += '=====================================================';
+
+          consoleBox.textContent = log;
         }
 
-        // Atualiza a tabela com o novo registro contabilizado
+        // Atualiza a tabela de diagnóstico após os testes
         checkDatabaseConnection();
       })
       .catch(function (err) {
@@ -180,7 +192,12 @@
         UI.showToast('Falha no Teste', err.message, 'error', 8000);
 
         if (consoleBox) {
-          consoleBox.textContent = '❌ ERRO NA PERSISTÊNCIA:\n' + err.message;
+          consoleBox.textContent = 
+            '=====================================================\n' +
+            '❌ FALHA NA PERSISTÊNCIA REAL:\n' +
+            '=====================================================\n' +
+            err.message + '\n\n' +
+            'Sugestão: Verifique se a função setupApplication() foi executada e se você concedeu as permissões ao Apps Script.';
         }
       });
   }
