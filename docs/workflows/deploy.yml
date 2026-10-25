@@ -1,0 +1,71 @@
+name: Deploy Elevare PDI to Google Apps Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  lint-and-test:
+    name: Validação e Testes Sintáticos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Executar Testes e Validação Sintática
+        run: npm test
+
+  deploy:
+    name: Sincronização com Google Apps Script
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Configurar Autenticação Clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ] || [ -z "$SCRIPT_ID" ]; then
+            echo "⚠️ Secrets CLASPRC_JSON ou SCRIPT_ID não configurados no repositório GitHub."
+            echo "Para ativar o deploy automatizado contínuo:"
+            echo "1. Adicione o secret CLASPRC_JSON com o conteúdo de ~/.clasprc.json"
+            echo "2. Adicione o secret SCRIPT_ID com o ID do seu projeto Google Apps Script"
+            exit 0
+          fi
+          echo "$CLASPRC_JSON" > ~/.clasprc.json
+          echo "{\"scriptId\":\"$SCRIPT_ID\",\"rootDir\":\"src\"}" > .clasp.json
+
+      - name: Enviar Código para o Apps Script (clasp push)
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -n "$CLASPRC_JSON" ]; then
+            npx clasp push --force
+            echo "✅ Código sincronizado com o Google Apps Script com sucesso!"
+          fi
