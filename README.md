@@ -20,7 +20,7 @@ Hospedado 100% no **Google Apps Script** utilizando o **Google Sheets** como ban
 
 - **Repositório GitHub (Privado):** [https://github.com/ninowwwup/elevare-pdi](https://github.com/ninowwwup/elevare-pdi)
 - **Editor do Apps Script:** [https://script.google.com/d/1cAm8QP2fvoiemg96caP5SUqnvTsOZl1j13BvbhvEq1fmIg0Zlt3Szobo/edit](https://script.google.com/d/1cAm8QP2fvoiemg96caP5SUqnvTsOZl1j13BvbhvEq1fmIg0Zlt3Szobo/edit)
-- **Aplicativo Web Publicado:** [https://script.google.com/macros/s/AKfycby0V7vf4aSwNBLjzqUnHNvSkenKXyZILm6l386nN2Ap6bDpjUK1FDscx28L6AUIXiDS/exec](https://script.google.com/macros/s/AKfycby0V7vf4aSwNBLjzqUnHNvSkenKXyZILm6l386nN2Ap6bDpjUK1FDscx28L6AUIXiDS/exec)
+- **Aplicativo Web Publicado:** [https://script.google.com/macros/s/AKfycbz5UFelugm4j2jB4pec6cgFT5xgRU2aKghjTkAf3Mx7HOo9WVmhb9rvuB8Uo8DGSeGd/exec](https://script.google.com/macros/s/AKfycbz5UFelugm4j2jB4pec6cgFT5xgRU2aKghjTkAf3Mx7HOo9WVmhb9rvuB8Uo8DGSeGd/exec)
 
 
 ---
