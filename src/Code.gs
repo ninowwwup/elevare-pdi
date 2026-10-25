@@ -18,7 +18,6 @@ function doGet(e) {
     .evaluate()
     .setTitle('Elevare PDI — Personal Development Hub')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
-    .addMetaTag('description', 'Hub pessoal de desenvolvimento profissional, competências, metas e biblioteca 3D')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
