@@ -1,29 +1,59 @@
 <script>
   /**
-   * Elevare PDI — Biblioteca de Componentes de Interface (UI)
-   * Fornece gerenciamento de toasts, modais, spinners e helpers visuais.
+   * Elevare PDI — Biblioteca de Componentes & Helpers de Interface (Fase 2)
    */
   window.UI = (function () {
-    // Mapa de ícones SVG limpos e otimizados (sem dependência externa)
+    // Mapa de Ícones SVG inline de alta fidelidade
     var ICONS = {
       'check-circle': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
       'alert-triangle': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
       'info': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
       'x-circle': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
-      'database': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>',
-      'refresh': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>'
+      'moon': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>',
+      'sun': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
     };
 
     /**
-     * Exibe uma notificação toast no canto da tela.
-     * @param {string} title Título
-     * @param {string} message Mensagem descritiva
-     * @param {'success'|'error'|'warning'|'info'} [type='info'] Tipo
-     * @param {number} [duration=5000] Duração em ms
+     * Inicializa o tema (dark ou light) recuperando de preferência salva.
+     */
+    function initTheme() {
+      var savedTheme = localStorage.getItem('elevare_theme') || 'dark';
+      setTheme(savedTheme);
+    }
+
+    /**
+     * Define o tema ativo na página.
+     * @param {'dark'|'light'} theme
+     */
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('elevare_theme', theme);
+      updateThemeButtonIcon(theme);
+    }
+
+    /**
+     * Alterna entre tema claro e escuro.
+     */
+    function toggleTheme() {
+      var current = document.body.getAttribute('data-theme') || 'dark';
+      var next = (current === 'dark') ? 'light' : 'dark';
+      setTheme(next);
+      showToast('Tema Alterado', 'Modo ' + (next === 'dark' ? 'Escuro' : 'Claro') + ' ativado.', 'info', 2500);
+    }
+
+    function updateThemeButtonIcon(theme) {
+      var btn = document.getElementById('theme-toggle-btn');
+      if (!btn) return;
+      btn.innerHTML = (theme === 'dark') ? ICONS['sun'] : ICONS['moon'];
+      btn.title = (theme === 'dark') ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro';
+    }
+
+    /**
+     * Gerenciamento de Toasts.
      */
     function showToast(title, message, type, duration) {
       type = type || 'info';
-      duration = duration || 5000;
+      duration = duration || 4500;
 
       var container = document.getElementById('toast-container');
       if (!container) {
@@ -43,13 +73,13 @@
 
       toast.innerHTML = 
         '<div style="flex-shrink:0;">' + iconSvg + '</div>' +
-        '<div class="toast-content">' +
-          '<div class="toast-title">' + escapeHtml(title) + '</div>' +
-          '<div>' + escapeHtml(message) + '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-weight:600; margin-bottom:0.2rem; font-size:0.9rem;">' + escapeHtml(title) + '</div>' +
+          '<div style="font-size:0.83rem; color:var(--text-secondary); line-height:1.4;">' + escapeHtml(message) + '</div>' +
         '</div>' +
-        '<button class="toast-close" title="Fechar">&times;</button>';
+        '<button class="toast-close-btn" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem; line-height:1;">&times;</button>';
 
-      var closeBtn = toast.querySelector('.toast-close');
+      var closeBtn = toast.querySelector('.toast-close-btn');
       var dismissed = false;
 
       function dismiss() {
@@ -58,24 +88,32 @@
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(1rem) scale(0.95)';
         setTimeout(function () {
-          if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-          }
-        }, 250);
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 200);
       }
 
       closeBtn.addEventListener('click', dismiss);
       setTimeout(dismiss, duration);
-
       container.appendChild(toast);
     }
 
     /**
-     * Controla o estado de carregamento de um botão.
-     * @param {HTMLElement} btn Elemento botão
-     * @param {boolean} isLoading Se está carregando
-     * @param {string} [loadingText] Texto temporário
+     * Gerenciamento de Modais.
      */
+    function openModal(modalId) {
+      var modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.add('open');
+      }
+    }
+
+    function closeModal(modalId) {
+      var modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('open');
+      }
+    }
+
     function setLoading(btn, isLoading, loadingText) {
       if (!btn) return;
       if (isLoading) {
@@ -90,11 +128,6 @@
       }
     }
 
-    /**
-     * Escapa caracteres HTML para exibição segura.
-     * @param {string} str
-     * @return {string}
-     */
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -107,7 +140,12 @@
 
     return {
       ICONS: ICONS,
+      initTheme: initTheme,
+      setTheme: setTheme,
+      toggleTheme: toggleTheme,
       showToast: showToast,
+      openModal: openModal,
+      closeModal: closeModal,
       setLoading: setLoading,
       escapeHtml: escapeHtml
     };

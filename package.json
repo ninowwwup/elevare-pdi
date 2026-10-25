@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Elevare PDI — Personal Development Hub",
   "scripts": {
+    "test": "node scripts/validate.js",
     "login": "clasp login",
     "push": "clasp push",
     "pull": "clasp pull",

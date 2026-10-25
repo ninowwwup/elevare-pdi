@@ -1,40 +1,152 @@
 <script>
   /**
-   * Elevare PDI — Lógica Principal do Frontend (App.html)
-   * Responsável pelo ciclo de vida da interface, verificação do banco de dados e testes de persistência.
+   * Elevare PDI — Lógica do Frontend (Fase 2)
    */
 
   document.addEventListener('DOMContentLoaded', function () {
-    initApp();
+    initElevareApp();
   });
 
-  function initApp() {
-    setupSidebarToggle();
-    checkDatabaseConnection();
+  function initElevareApp() {
+    UI.initTheme();
+    setupDynamicGreeting();
+    setupNavigationAndTabs();
+    setupSidebarControls();
+    setupThemeToggle();
     bindActionButtons();
+    setupQuickCreateModal();
+
+    // Executa verificação inicial de conexão com o Google Sheets
+    checkDatabaseConnection();
   }
 
   /**
-   * Alternância de recolhimento da barra lateral.
+   * Configura saudação contextual baseada no horário local.
    */
-  function setupSidebarToggle() {
+  function setupDynamicGreeting() {
+    var greetingEl = document.getElementById('hero-greeting-text');
+    if (!greetingEl) return;
+
+    var hour = new Date().getHours();
+    var greeting = 'Olá';
+    if (hour >= 5 && hour < 12) {
+      greeting = 'Bom dia';
+    } else if (hour >= 12 && hour < 18) {
+      greeting = 'Boa tarde';
+    } else {
+      greeting = 'Boa noite';
+    }
+
+    greetingEl.textContent = greeting + '! Bem-vindo ao Elevare PDI';
+  }
+
+  /**
+   * Navegação fluida entre abas da interface.
+   */
+  function setupNavigationAndTabs() {
+    var tabs = document.querySelectorAll('.view-tab');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var targetId = tab.dataset.target;
+        switchTab(targetId);
+      });
+    });
+
+    // Links da barra lateral também ativam a aba correspondente
+    var navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        navLinks.forEach(function (l) { l.classList.remove('active'); });
+        link.classList.add('active');
+
+        var targetTab = link.dataset.tab;
+        if (targetTab) {
+          switchTab(targetTab);
+        }
+      });
+    });
+
+    // Badge no header também direciona para a aba do banco
+    var topbarBadge = document.getElementById('topbar-db-badge');
+    if (topbarBadge) {
+      topbarBadge.addEventListener('click', function () {
+        switchTab('tab-database');
+        var navDb = document.getElementById('nav-database');
+        if (navDb) {
+          navLinks.forEach(function (l) { l.classList.remove('active'); });
+          navDb.classList.add('active');
+        }
+      });
+    }
+  }
+
+  function switchTab(targetTabId) {
+    var tabBtns = document.querySelectorAll('.view-tab');
+    tabBtns.forEach(function (b) {
+      b.classList.toggle('active', b.dataset.target === targetTabId);
+    });
+
+    var paneDashboard = document.getElementById('pane-dashboard');
+    var paneDatabase = document.getElementById('pane-database');
+
+    if (targetTabId === 'tab-dashboard') {
+      if (paneDashboard) paneDashboard.style.display = 'block';
+      if (paneDatabase) paneDatabase.style.display = 'none';
+    } else {
+      if (paneDashboard) paneDashboard.style.display = 'none';
+      if (paneDatabase) paneDatabase.style.display = 'block';
+    }
+  }
+
+  /**
+   * Controles da Sidebar (Recolher no Desktop / Gaveta no Mobile).
+   */
+  function setupSidebarControls() {
     var sidebar = document.getElementById('app-sidebar');
-    var toggleBtn = document.getElementById('sidebar-toggle');
+    var toggleBtn = document.getElementById('sidebar-toggle-btn');
+    var mobileBtn = document.getElementById('mobile-menu-btn');
+
     if (toggleBtn && sidebar) {
       toggleBtn.addEventListener('click', function () {
         sidebar.classList.toggle('collapsed');
       });
     }
+
+    if (mobileBtn && sidebar) {
+      mobileBtn.addEventListener('click', function () {
+        sidebar.classList.toggle('mobile-open');
+      });
+    }
   }
 
   /**
-   * Vincula os botões de ação às funções da API.
+   * Alternador de Tema Escuro / Claro.
+   */
+  function setupThemeToggle() {
+    var btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        UI.toggleTheme();
+      });
+    }
+  }
+
+  /**
+   * Vincula os botões de ação e diagnósticos.
    */
   function bindActionButtons() {
     var btnCheck = document.getElementById('btn-check-db');
     if (btnCheck) {
       btnCheck.addEventListener('click', function () {
         checkDatabaseConnection(btnCheck);
+      });
+    }
+
+    var btnRefreshDash = document.getElementById('btn-action-refresh-dash');
+    if (btnRefreshDash) {
+      btnRefreshDash.addEventListener('click', function () {
+        checkDatabaseConnection(btnRefreshDash);
       });
     }
 
@@ -51,39 +163,142 @@
         runPersistenceTest(btnTestPersistence);
       });
     }
+
+    var btnQuickCreate = document.getElementById('btn-quick-create');
+    if (btnQuickCreate) {
+      btnQuickCreate.addEventListener('click', function () {
+        UI.openModal('modal-quick-create');
+      });
+    }
   }
 
   /**
-   * Verifica a conexão real com a planilha do Google Sheets.
+   * Modal de Criação Rápida de Registro.
+   */
+  function setupQuickCreateModal() {
+    var btnSave = document.getElementById('btn-save-quick-record');
+    if (!btnSave) return;
+
+    btnSave.addEventListener('click', function () {
+      var moduleSelect = document.getElementById('quick-target-module');
+      var titleInput = document.getElementById('quick-title');
+      var descInput = document.getElementById('quick-desc');
+
+      var targetTable = moduleSelect ? moduleSelect.value : 'METAS';
+      var title = titleInput ? titleInput.value.trim() : '';
+      var desc = descInput ? descInput.value.trim() : '';
+
+      if (!title) {
+        UI.showToast('Campo Obrigatório', 'Por favor, informe o título do registro.', 'warning');
+        if (titleInput) titleInput.focus();
+        return;
+      }
+
+      UI.setLoading(btnSave, true, 'Salvando...');
+
+      var recordData = {};
+      if (targetTable === 'METAS') {
+        recordData = {
+          titulo: title,
+          descricao: desc,
+          data_inicial: new Date().toISOString().split('T')[0],
+          prazo: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          prioridade: 'media',
+          status: 'em_andamento'
+        };
+      } else if (targetTable === 'ACOES') {
+        recordData = {
+          titulo: title,
+          descricao: desc,
+          prazo: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+          prioridade: 'alta',
+          status: 'em_progresso',
+          origem_tipo: 'avulsa'
+        };
+      } else if (targetTable === 'FEEDBACKS') {
+        recordData = {
+          titulo: title,
+          descricao: desc,
+          data: new Date().toISOString().split('T')[0],
+          origem: 'Autoavaliação',
+          status: 'novo',
+          prioridade: 'media'
+        };
+      } else if (targetTable === 'COMPETENCIAS') {
+        recordData = {
+          nome: title,
+          descricao: desc,
+          tipo: 'hard_skill',
+          nivel_atual: 3,
+          nivel_desejado: 5,
+          importancia: 'alta',
+          status: 'em_desenvolvimento'
+        };
+      } else if (targetTable === 'LIVROS') {
+        recordData = {
+          titulo: title,
+          resumo: desc,
+          status: 'quero_ler',
+          total_paginas: 300,
+          pagina_atual: 0,
+          percentual_leitura: 0,
+          estante: 'quero_ler',
+          favorito: false
+        };
+      }
+
+      ApiClient.call('apiCreateRecord', targetTable, recordData)
+        .then(function (created) {
+          UI.setLoading(btnSave, false);
+          UI.closeModal('modal-quick-create');
+          UI.showToast('Registro Gravado!', 'Item salvo com sucesso na aba ' + targetTable + ' da sua planilha.', 'success');
+
+          // Limpa o formulário
+          if (titleInput) titleInput.value = '';
+          if (descInput) descInput.value = '';
+
+          // Atualiza as métricas da interface
+          checkDatabaseConnection();
+        })
+        .catch(function (err) {
+          UI.setLoading(btnSave, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    });
+  }
+
+  /**
+   * Verifica a conexão real com o Google Sheets e atualiza os KPIs do Dashboard.
    */
   function checkDatabaseConnection(btnElement) {
     var statusBadge = document.getElementById('db-status-badge');
     var statusDot = document.getElementById('db-status-dot');
     var statusText = document.getElementById('db-status-text');
-    var sheetInfoContainer = document.getElementById('sheet-info-container');
+    var dbMetricsGrid = document.getElementById('db-metrics-grid');
     var unconfiguredBanner = document.getElementById('unconfigured-banner');
 
-    if (btnElement) {
-      UI.setLoading(btnElement, true, 'Verificando...');
-    }
+    if (btnElement) UI.setLoading(btnElement, true, 'Carregando...');
 
     ApiClient.call('apiGetDatabaseStatus')
       .then(function (status) {
         if (btnElement) UI.setLoading(btnElement, false);
 
         if (status.configured && status.status === 'CONECTADO') {
-          // Conectado com sucesso
-          statusDot.className = 'status-dot active';
-          statusBadge.className = 'badge badge-success';
-          statusText.textContent = 'Conectado';
+          if (statusDot) statusDot.className = 'status-dot active';
+          if (statusBadge) statusBadge.className = 'badge badge-success';
+          if (statusText) statusText.textContent = 'Conectado';
 
           if (unconfiguredBanner) unconfiguredBanner.style.display = 'none';
-          if (sheetInfoContainer) sheetInfoContainer.style.display = 'block';
+          if (dbMetricsGrid) dbMetricsGrid.style.display = 'grid';
 
-          // Atualiza dados na tela
-          document.getElementById('metric-total-sheets').textContent = status.totalSheets || '0';
-          document.getElementById('metric-user-email').textContent = status.currentUser || '—';
-          document.getElementById('metric-sheet-name').textContent = status.spreadsheetName || 'Planilha Elevare PDI';
+          var totalSheetsEl = document.getElementById('metric-total-sheets');
+          if (totalSheetsEl) totalSheetsEl.textContent = status.totalSheets || '15';
+
+          var emailEl = document.getElementById('metric-user-email');
+          if (emailEl) emailEl.textContent = status.currentUser || '—';
+
+          var nameEl = document.getElementById('metric-sheet-name');
+          if (nameEl) nameEl.textContent = status.spreadsheetName || 'Elevare PDI';
 
           var linkEl = document.getElementById('metric-sheet-link');
           if (linkEl && status.spreadsheetUrl) {
@@ -91,46 +306,60 @@
             linkEl.style.display = 'inline-flex';
           }
 
-          // Renderiza tabela de abas
+          // Renderiza a tabela de diagnóstico das abas
           renderSheetsTable(status.sheets);
 
-          UI.showToast('Banco Conectado', 'Acesso à planilha verificado com sucesso.', 'success');
+          // Atualiza contadores reais dos KPIs
+          updateDashboardKPIs(status.sheets);
         } else {
-          // Não configurado
-          statusDot.className = 'status-dot pending';
-          statusBadge.className = 'badge badge-warning';
-          statusText.textContent = 'Não Inicializado';
+          if (statusDot) statusDot.className = 'status-dot pending';
+          if (statusBadge) statusBadge.className = 'badge badge-warning';
+          if (statusText) statusText.textContent = 'Não Inicializado';
 
           if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
-          if (sheetInfoContainer) sheetInfoContainer.style.display = 'none';
-
-          UI.showToast('Configuração Pendente', status.message || 'Execute a inicialização para criar o banco.', 'warning');
+          if (dbMetricsGrid) dbMetricsGrid.style.display = 'none';
         }
       })
       .catch(function (err) {
         if (btnElement) UI.setLoading(btnElement, false);
-
-        statusDot.className = 'status-dot error';
-        statusBadge.className = 'badge badge-error';
-        statusText.textContent = 'Erro de Conexão';
+        if (statusDot) statusDot.className = 'status-dot error';
+        if (statusBadge) statusBadge.className = 'badge badge-error';
+        if (statusText) statusText.textContent = 'Erro';
 
         if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
-        if (sheetInfoContainer) sheetInfoContainer.style.display = 'none';
-
-        UI.showToast('Erro de Conexão', err.message, 'error', 7000);
       });
   }
 
   /**
-   * Executa a inicialização do banco de dados (criação das 15 abas).
+   * Atualiza os KPIs do Dashboard com base nos registros reais das abas.
+   */
+  function updateDashboardKPIs(sheets) {
+    if (!sheets || !Array.isArray(sheets)) return;
+
+    var counts = {};
+    for (var i = 0; i < sheets.length; i++) {
+      counts[sheets[i].name] = sheets[i].rows;
+    }
+
+    var kpiMetasAndamento = document.getElementById('kpi-metas-andamento');
+    if (kpiMetasAndamento) kpiMetasAndamento.textContent = counts['METAS'] || 0;
+
+    var kpiFeedbacks = document.getElementById('kpi-feedbacks-total');
+    if (kpiFeedbacks) kpiFeedbacks.textContent = counts['FEEDBACKS'] || 0;
+
+    var kpiLivros = document.getElementById('kpi-livros-total');
+    if (kpiLivros) kpiLivros.textContent = counts['LIVROS'] || 0;
+  }
+
+  /**
+   * Executa a inicialização das 15 abas.
    */
   function runSetupDatabase(btnElement) {
-    if (!confirm('Deseja iniciar a configuração automática do banco de dados? As 15 abas necessárias serão criadas na sua planilha do Google Drive.')) {
+    if (!confirm('Deseja inicializar o banco de dados agora? As 15 abas estruturadas serão criadas na sua planilha do Google Drive.')) {
       return;
     }
 
-    UI.setLoading(btnElement, true, 'Configurando abas...');
-
+    UI.setLoading(btnElement, true, 'Configurando...');
     ApiClient.call('apiSetup')
       .then(function (result) {
         UI.setLoading(btnElement, false);
@@ -153,13 +382,13 @@
 
     UI.setLoading(btnElement, true, 'Executando 7 Testes...');
     if (consoleBox) {
-      consoleBox.textContent = '⏳ Iniciando bateria completa de 7 testes de persistência real no Google Sheets...\n- Comunicando via google.script.run...\n- Aguardando execução do LockService e SpreadsheetApp...\n';
+      consoleBox.textContent = '⏳ Executando bateria completa de 7 testes de persistência real no Google Sheets...\n- Comunicando via google.script.run...\n- Aguardando execução do LockService e SpreadsheetApp...\n';
     }
 
     ApiClient.call('apiRunFullPersistenceValidation', testNote)
       .then(function (res) {
         UI.setLoading(btnElement, false);
-        UI.showToast('Persistência 100% Aprovada!', 'Todos os 7 testes de ciclo de vida foram validados no Google Sheets.', 'success', 6000);
+        UI.showToast('Persistência 100% Aprovada!', 'Todos os 7 testes foram validados no Google Sheets.', 'success', 6000);
 
         if (consoleBox) {
           var log = '=====================================================\n';
@@ -184,7 +413,6 @@
           consoleBox.textContent = log;
         }
 
-        // Atualiza a tabela de diagnóstico após os testes
         checkDatabaseConnection();
       })
       .catch(function (err) {
@@ -203,7 +431,7 @@
   }
 
   /**
-   * Renderiza a tabela de diagnóstico das 15 abas.
+   * Renderiza a tabela de diagnóstico das abas.
    */
   function renderSheetsTable(sheets) {
     var tbody = document.getElementById('sheets-table-body');
@@ -218,11 +446,11 @@
     for (var i = 0; i < sheets.length; i++) {
       var s = sheets[i];
       html += 
-        '<tr>' +
-          '<td><strong>' + UI.escapeHtml(s.name) + '</strong></td>' +
-          '<td><span class="badge badge-info">' + s.rows + ' registros</span></td>' +
-          '<td>' + s.cols + ' colunas</td>' +
-          '<td><span class="badge badge-success">OK</span></td>' +
+        '<tr style="border-bottom: 1px solid var(--border-subtle);">' +
+          '<td style="padding: 0.75rem 1rem;"><strong>' + UI.escapeHtml(s.name) + '</strong></td>' +
+          '<td style="padding: 0.75rem 1rem;"><span class="badge badge-info">' + s.rows + ' registros</span></td>' +
+          '<td style="padding: 0.75rem 1rem; color:var(--text-secondary);">' + s.cols + ' colunas</td>' +
+          '<td style="padding: 0.75rem 1rem;"><span class="badge badge-success">OK</span></td>' +
         '</tr>';
     }
     tbody.innerHTML = html;
