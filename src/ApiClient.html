@@ -1,0 +1,93 @@
+<script>
+  /**
+   * Elevare PDI — Cliente de API Frontend (ApiClient)
+   * Encapsula chamadas ao servidor via google.script.run com Promises,
+   * controle de concorrência, tempo limite (timeout) e mensagens amigáveis.
+   */
+  window.ApiClient = (function () {
+    var DEFAULT_TIMEOUT_MS = 30000; // 30 segundos
+    var pendingRequests = new Set();
+
+    /**
+     * Invoca uma função do servidor Apps Script e retorna uma Promise.
+     * @param {string} functionName Nome da função exposta no Code.gs
+     * @param {...any} args Argumentos a enviar
+     * @return {Promise<any>}
+     */
+    function call(functionName) {
+      var args = Array.prototype.slice.call(arguments, 1);
+
+      return new Promise(function (resolve, reject) {
+        // Verifica se a API do Google Apps Script está disponível no ambiente
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+          reject(new Error('Ambiente do Google Apps Script não detectado. Execute esta aplicação através do link gerado no Apps Script.'));
+          return;
+        }
+
+        var isPending = pendingRequests.has(functionName);
+        if (isPending) {
+          // Permite chamadas simultâneas apenas se explicitamente suportadas
+          console.warn('[ApiClient] Requisição em andamento para: ' + functionName);
+        }
+        pendingRequests.add(functionName);
+
+        var hasFinished = false;
+
+        // Configuração de Timeout para evitar travamento infinito na interface
+        var timer = setTimeout(function () {
+          if (!hasFinished) {
+            hasFinished = true;
+            pendingRequests.delete(functionName);
+            reject(new Error('Tempo limite excedido na comunicação com o servidor. Verifique sua conexão e tente novamente.'));
+          }
+        }, DEFAULT_TIMEOUT_MS);
+
+        try {
+          var runner = google.script.run
+            .withSuccessHandler(function (response) {
+              if (hasFinished) return;
+              hasFinished = true;
+              clearTimeout(timer);
+              pendingRequests.delete(functionName);
+
+              // Valida o envelope padrão da aplicação { success: true/false, data, error }
+              if (response && typeof response === 'object' && response.success === false) {
+                reject(new Error(response.error || 'Ocorreu um erro no servidor.'));
+              } else if (response && typeof response === 'object' && response.success === true) {
+                resolve(response.data);
+              } else {
+                resolve(response);
+              }
+            })
+            .withFailureHandler(function (err) {
+              if (hasFinished) return;
+              hasFinished = true;
+              clearTimeout(timer);
+              pendingRequests.delete(functionName);
+
+              var message = (err && err.message) ? err.message : String(err);
+              reject(new Error(message));
+            });
+
+          // Dispara a chamada com os argumentos
+          if (typeof runner[functionName] !== 'function') {
+            clearTimeout(timer);
+            pendingRequests.delete(functionName);
+            reject(new Error('A função do servidor "' + functionName + '" não existe ou não está acessível.'));
+            return;
+          }
+
+          runner[functionName].apply(runner, args);
+        } catch (e) {
+          clearTimeout(timer);
+          pendingRequests.delete(functionName);
+          reject(e);
+        }
+      });
+    }
+
+    return {
+      call: call
+    };
+  })();
+</script>

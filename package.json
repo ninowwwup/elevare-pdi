@@ -1,0 +1,24 @@
+{
+  "name": "elevare-pdi",
+  "version": "1.0.0",
+  "description": "Elevare PDI — Personal Development Hub",
+  "scripts": {
+    "login": "clasp login",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp deploy"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  },
+  "keywords": [
+    "apps-script",
+    "google-sheets",
+    "pdi",
+    "personal-development",
+    "dashboard"
+  ],
+  "author": "",
+  "license": "MIT"
+}

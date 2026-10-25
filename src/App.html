@@ -1,0 +1,213 @@
+<script>
+  /**
+   * Elevare PDI — Lógica Principal do Frontend (App.html)
+   * Responsável pelo ciclo de vida da interface, verificação do banco de dados e testes de persistência.
+   */
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initApp();
+  });
+
+  function initApp() {
+    setupSidebarToggle();
+    checkDatabaseConnection();
+    bindActionButtons();
+  }
+
+  /**
+   * Alternância de recolhimento da barra lateral.
+   */
+  function setupSidebarToggle() {
+    var sidebar = document.getElementById('app-sidebar');
+    var toggleBtn = document.getElementById('sidebar-toggle');
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', function () {
+        sidebar.classList.toggle('collapsed');
+      });
+    }
+  }
+
+  /**
+   * Vincula os botões de ação às funções da API.
+   */
+  function bindActionButtons() {
+    var btnCheck = document.getElementById('btn-check-db');
+    if (btnCheck) {
+      btnCheck.addEventListener('click', function () {
+        checkDatabaseConnection(btnCheck);
+      });
+    }
+
+    var btnSetup = document.getElementById('btn-setup-db');
+    if (btnSetup) {
+      btnSetup.addEventListener('click', function () {
+        runSetupDatabase(btnSetup);
+      });
+    }
+
+    var btnTestPersistence = document.getElementById('btn-test-persistence');
+    if (btnTestPersistence) {
+      btnTestPersistence.addEventListener('click', function () {
+        runPersistenceTest(btnTestPersistence);
+      });
+    }
+  }
+
+  /**
+   * Verifica a conexão real com a planilha do Google Sheets.
+   */
+  function checkDatabaseConnection(btnElement) {
+    var statusBadge = document.getElementById('db-status-badge');
+    var statusDot = document.getElementById('db-status-dot');
+    var statusText = document.getElementById('db-status-text');
+    var sheetInfoContainer = document.getElementById('sheet-info-container');
+    var unconfiguredBanner = document.getElementById('unconfigured-banner');
+
+    if (btnElement) {
+      UI.setLoading(btnElement, true, 'Verificando...');
+    }
+
+    ApiClient.call('apiGetDatabaseStatus')
+      .then(function (status) {
+        if (btnElement) UI.setLoading(btnElement, false);
+
+        if (status.configured && status.status === 'CONECTADO') {
+          // Conectado com sucesso
+          statusDot.className = 'status-dot active';
+          statusBadge.className = 'badge badge-success';
+          statusText.textContent = 'Conectado';
+
+          if (unconfiguredBanner) unconfiguredBanner.style.display = 'none';
+          if (sheetInfoContainer) sheetInfoContainer.style.display = 'block';
+
+          // Atualiza dados na tela
+          document.getElementById('metric-total-sheets').textContent = status.totalSheets || '0';
+          document.getElementById('metric-user-email').textContent = status.currentUser || '—';
+          document.getElementById('metric-sheet-name').textContent = status.spreadsheetName || 'Planilha Elevare PDI';
+
+          var linkEl = document.getElementById('metric-sheet-link');
+          if (linkEl && status.spreadsheetUrl) {
+            linkEl.href = status.spreadsheetUrl;
+            linkEl.style.display = 'inline-flex';
+          }
+
+          // Renderiza tabela de abas
+          renderSheetsTable(status.sheets);
+
+          UI.showToast('Banco Conectado', 'Acesso à planilha verificado com sucesso.', 'success');
+        } else {
+          // Não configurado
+          statusDot.className = 'status-dot pending';
+          statusBadge.className = 'badge badge-warning';
+          statusText.textContent = 'Não Inicializado';
+
+          if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
+          if (sheetInfoContainer) sheetInfoContainer.style.display = 'none';
+
+          UI.showToast('Configuração Pendente', status.message || 'Execute a inicialização para criar o banco.', 'warning');
+        }
+      })
+      .catch(function (err) {
+        if (btnElement) UI.setLoading(btnElement, false);
+
+        statusDot.className = 'status-dot error';
+        statusBadge.className = 'badge badge-error';
+        statusText.textContent = 'Erro de Conexão';
+
+        if (unconfiguredBanner) unconfiguredBanner.style.display = 'block';
+        if (sheetInfoContainer) sheetInfoContainer.style.display = 'none';
+
+        UI.showToast('Erro de Conexão', err.message, 'error', 7000);
+      });
+  }
+
+  /**
+   * Executa a inicialização do banco de dados (criação das 15 abas).
+   */
+  function runSetupDatabase(btnElement) {
+    if (!confirm('Deseja iniciar a configuração automática do banco de dados? As 15 abas necessárias serão criadas na sua planilha do Google Drive.')) {
+      return;
+    }
+
+    UI.setLoading(btnElement, true, 'Configurando abas...');
+
+    ApiClient.call('apiSetup')
+      .then(function (result) {
+        UI.setLoading(btnElement, false);
+        UI.showToast('Instalação Concluída', 'Banco configurado com ' + result.totalSheets + ' abas no seu Google Drive.', 'success', 6000);
+        checkDatabaseConnection();
+      })
+      .catch(function (err) {
+        UI.setLoading(btnElement, false);
+        UI.showToast('Falha na Configuração', err.message, 'error', 8000);
+      });
+  }
+
+  /**
+   * Executa teste real de gravação e leitura no Google Sheets.
+   */
+  function runPersistenceTest(btnElement) {
+    var consoleBox = document.getElementById('test-console-output');
+    var noteInput = document.getElementById('test-note-input');
+    var testNote = noteInput ? noteInput.value : '';
+
+    UI.setLoading(btnElement, true, 'Gravando e Lendo...');
+    if (consoleBox) {
+      consoleBox.textContent = '⏳ Iniciando teste de ciclo de vida completo...\n- Enviando requisição de gravação via google.script.run...\n';
+    }
+
+    ApiClient.call('apiRunPersistenceTest', testNote)
+      .then(function (res) {
+        UI.setLoading(btnElement, false);
+        UI.showToast('Persistência Validada!', 'Registro gravado e lido do Google Sheets com sucesso.', 'success');
+
+        if (consoleBox) {
+          consoleBox.textContent = 
+            '✅ SUCESSO: Persistência real confirmada!\n\n' +
+            'Timestamp: ' + res.timestamp + '\n' +
+            'Planilha: ' + res.spreadsheetUrl + '\n\n' +
+            '--- REGISTRO GRAVADO NO SHEETS ---\n' +
+            JSON.stringify(res.insertedRecord, null, 2) + '\n\n' +
+            '--- REGISTRO LIDO IMEDIATAMENTE PELO ID ---\n' +
+            JSON.stringify(res.readRecord, null, 2);
+        }
+
+        // Atualiza a tabela com o novo registro contabilizado
+        checkDatabaseConnection();
+      })
+      .catch(function (err) {
+        UI.setLoading(btnElement, false);
+        UI.showToast('Falha no Teste', err.message, 'error', 8000);
+
+        if (consoleBox) {
+          consoleBox.textContent = '❌ ERRO NA PERSISTÊNCIA:\n' + err.message;
+        }
+      });
+  }
+
+  /**
+   * Renderiza a tabela de diagnóstico das 15 abas.
+   */
+  function renderSheetsTable(sheets) {
+    var tbody = document.getElementById('sheets-table-body');
+    if (!tbody) return;
+
+    if (!sheets || sheets.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">Nenhuma aba encontrada.</td></tr>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < sheets.length; i++) {
+      var s = sheets[i];
+      html += 
+        '<tr>' +
+          '<td><strong>' + UI.escapeHtml(s.name) + '</strong></td>' +
+          '<td><span class="badge badge-info">' + s.rows + ' registros</span></td>' +
+          '<td>' + s.cols + ' colunas</td>' +
+          '<td><span class="badge badge-success">OK</span></td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
+</script>

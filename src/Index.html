@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Elevare PDI — Personal Development Hub</title>
+  <!-- Estilos e Design System -->
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Barra Lateral de Navegação (Sidebar) -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="sidebar-brand">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#brand-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <defs>
+              <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8b5cf6"/>
+                <stop offset="50%" stop-color="#3b82f6"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+            <polyline points="16 7 22 7 22 13"></polyline>
+          </svg>
+          <span>Elevare PDI</span>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="Recolher / Expandir Menu" aria-label="Recolher Menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navegação Modular -->
+      <nav class="sidebar-nav">
+        <a class="nav-item active" id="nav-phase1" title="Fase 1: Conexão e Banco">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+          </span>
+          <span>Banco & Conexão</span>
+        </a>
+        <a class="nav-item" id="nav-dashboard" style="opacity: 0.6;" title="Disponível na Fase 3">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+          </span>
+          <span>Dashboard (Fase 3)</span>
+        </a>
+        <a class="nav-item" id="nav-pdi" style="opacity: 0.6;" title="Disponível na Fase 5">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+          </span>
+          <span>Meu PDI (Fase 5)</span>
+        </a>
+        <a class="nav-item" id="nav-skills" style="opacity: 0.6;" title="Disponível na Fase 5">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </span>
+          <span>Competências (Fase 5)</span>
+        </a>
+        <a class="nav-item" id="nav-metas" style="opacity: 0.6;" title="Disponível na Fase 5">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="6"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+          </span>
+          <span>Metas & Ações (Fase 5)</span>
+        </a>
+        <a class="nav-item" id="nav-feedbacks" style="opacity: 0.6;" title="Disponível na Fase 5">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </span>
+          <span>Feedbacks (Fase 5)</span>
+        </a>
+        <a class="nav-item" id="nav-biblioteca" style="opacity: 0.6;" title="Disponível na Fase 6">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </span>
+          <span>Biblioteca 3D (Fase 6)</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span>Fase 1: Fundação</span>
+        <span class="badge badge-info">v1.0.0</span>
+      </div>
+    </aside>
+
+    <!-- Área Principal -->
+    <main class="app-main">
+      <!-- Cabeçalho Superior -->
+      <header class="app-header">
+        <div class="header-left">
+          <div class="header-title-wrapper">
+            <h1 class="header-title">Fase 1 — Estrutura, Arquitetura e Banco de Dados</h1>
+            <span class="header-subtitle">Google Apps Script &bull; Google Sheets &bull; Persistência Real</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-surface); padding: 0.4rem 0.8rem; border-radius: var(--radius-full); border: 1px solid var(--border-subtle);">
+            <span id="db-status-dot" class="status-dot pending"></span>
+            <span id="db-status-badge" class="badge badge-warning">
+              <span id="db-status-text">Verificando...</span>
+            </span>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btn-check-db" title="Recarregar status da planilha">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+            </svg>
+            <span>Verificar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Conteúdo da Página -->
+      <div class="app-content">
+        <!-- Banner de Banco Não Configurado -->
+        <div id="unconfigured-banner" class="card" style="display: none; border-left: 4px solid var(--status-warning); margin-bottom: 2rem;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div>
+              <h2 style="font-size: 1.15rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.4rem;">
+                Instalação Inicial Necessária
+              </h2>
+              <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 720px; line-height: 1.6;">
+                O banco de dados ainda não foi inicializado no seu Google Drive. Clique no botão abaixo para criar automaticamente a planilha dedicada do <strong>Elevare PDI</strong> com as 15 abas estruturadas, regras de validação e mapeamento de cabeçalhos.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-setup-db">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+              </svg>
+              <span>Inicializar Banco de Dados Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Painel de Métricas e Diagnóstico de Conexão -->
+        <div id="sheet-info-container" style="display: none;">
+          <!-- 4 Cards Métricos de Diagnóstico -->
+          <div class="grid-4" style="margin-bottom: 2rem;">
+            <div class="card">
+              <div class="card-description">Status do Banco</div>
+              <div style="font-size: 1.5rem; font-weight: 700; color: var(--status-success); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span class="status-dot active"></span>
+                <span>Conectado</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-description">Abas Estruturadas</div>
+              <div id="metric-total-sheets" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-cyan); margin-top: 0.35rem;">
+                15
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-description">Proprietário / Conta Google</div>
+              <div id="metric-user-email" style="font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-top: 0.6rem; word-break: break-all;">
+                <?= userEmail ?>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-description">Planilha Dedicada</div>
+              <div id="metric-sheet-name" style="font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-top: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Elevare PDI
+              </div>
+              <a id="metric-sheet-link" href="#" target="_blank" class="btn btn-outline btn-sm" style="margin-top: 0.6rem; display: inline-flex;">
+                Abrir Google Sheets &nearr;
+              </a>
+            </div>
+          </div>
+
+          <!-- Grid com Tabela de Abas e Ferramenta de Teste de Persistência -->
+          <div class="grid-2" style="margin-bottom: 2rem;">
+            <!-- Tabela das 15 Abas -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Abas e Registros do Banco</h2>
+                  <div class="card-description">Monitoramento em tempo real da contagem de linhas e colunas</div>
+                </div>
+              </div>
+              <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Nome da Aba</th>
+                      <th>Registros</th>
+                      <th>Colunas</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sheets-table-body">
+                    <!-- Preenchido via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Validador Real de Gravação e Leitura -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Validação Real de Persistência</h2>
+                  <div class="card-description">Grava um registro real com LockService e lê de volta imediatamente</div>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+                  Nota do Teste (opcional):
+                </label>
+                <input type="text" id="test-note-input" placeholder="Ex: Validando persistência da Fase 1" 
+                  style="width: 100%; background: var(--bg-surface-elevated); border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; color: var(--text-primary); font-size: 0.9rem;" />
+              </div>
+
+              <button class="btn btn-primary" id="btn-test-persistence" style="width: 100%; margin-bottom: 1.25rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Executar Gravação e Leitura Real no Sheets</span>
+              </button>
+
+              <div>
+                <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Log de Resposta do Servidor:
+                </label>
+                <div id="test-console-output" class="console-box">Clique no botão acima para testar a persistência real...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guia Informativo da Fase 1 -->
+        <div class="card" style="background: var(--bg-surface-elevated); border-color: var(--border-accent);">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title" style="color: var(--accent-violet);">
+                Visão Geral da Fase 1 — Fundação e Arquitetura Concluídas
+              </h2>
+              <div class="card-description">
+                O backend do Google Apps Script e o modelo de banco de dados do Google Sheets foram desenhados e implementados.
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+            <p><strong>Destaques da Implementação:</strong></p>
+            <ul style="padding-left: 1.4rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              <li><strong>Zero custos:</strong> 100% hospedado no Google Apps Script integrado ao Google Sheets privado no seu Google Drive.</li>
+              <li><strong>15 Abas com Esquema Estrito:</strong> <code>CONFIG</code>, <code>MODULOS</code>, <code>CAMPOS_CUSTOM</code>, <code>FEEDBACKS</code>, <code>COMPETENCIAS</code>, <code>AVALIACOES</code>, <code>METAS</code>, <code>ACOES</code>, <code>EVIDENCIAS</code>, <code>LIVROS</code>, <code>LEITURAS</code>, <code>APRENDIZADOS</code>, <code>CURSOS</code>, <code>REUNIOES</code>, <code>HISTORICO</code>.</li>
+              <li><strong>Idempotência:</strong> O script de inicialização cria as abas e cabeçalhos ausentes sem nunca apagar dados existentes.</li>
+              <li><strong>Mapeamento por Cabeçalho:</strong> Leituras e escritas buscam colunas pelo nome, permitindo flexibilidade sem quebrar índices.</li>
+              <li><strong>Segurança:</strong> O ID da planilha fica oculto em <code>ScriptProperties</code>; whitelists barram qualquer tentativa de acesso a abas indevidas.</li>
+              <li><strong>Concorrência e Locks:</strong> Operações de gravação utilizam <code>LockService</code> para evitar colisões e sobrescritas acidentais.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Container de Toasts para Notificações -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts e Componentes Frontend -->
+  <?!= include('Components'); ?>
+  <?!= include('ApiClient'); ?>
+  <?!= include('App'); ?>
+</body>
+</html>
