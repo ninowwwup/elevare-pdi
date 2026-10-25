@@ -6,12 +6,20 @@ Este documento registra os testes planejados, critérios de aceitação e os res
 
 ## 1. Critérios de Aceitação Obrigatórios da Fase 1
 
-- [ ] **T01 — Inicialização Idempotente do Banco:** Executar `setupApplication()` deve criar a planilha caso não exista, criar as 15 abas com cabeçalhos exatos e não duplicar nada nem apagar dados ao ser executado uma segunda vez.
-- [ ] **T02 — Armazenamento Seguro de Propriedades:** O ID da planilha deve ser gravado em `ScriptProperties` e não ser exposto para o frontend.
-- [ ] **T03 — Verificação de Conectividade:** A função `pingDatabase()` deve validar se a planilha está acessível e retornar o status das abas e contagem de registros.
-- [ ] **T04 — Gravação e Leitura Real (CRUD Base):** Inserir um registro de teste na aba `CONFIG` ou `HISTORICO`, ler o registro de volta pelo ID e confirmar integridade de campos e timestamps (`created_at`, `updated_at`).
-- [ ] **T05 — Tratamento de Erros e Timeouts:** Requisições inválidas ou tabelas não permitidas devem ser rejeitadas com mensagens seguras e compreensíveis.
-- [ ] **T06 — Bloqueio de Concorrência (LockService):** Operações de escrita devem respeitar o lock de script.
+- [x] **T01 — Inicialização Idempotente do Banco:** `setupDatabase()` cria a planilha caso não exista, estrutura as 15 abas com cabeçalhos exatos e não duplica nada nem apaga dados ao ser executada novamente.
+- [x] **T02 — Armazenamento Seguro de Propriedades:** O ID da planilha fica gravado exclusivamente em `ScriptProperties` e não é exposto para o frontend.
+- [x] **T03 — Verificação de Conectividade:** `pingDatabase()` valida se a planilha está acessível e retorna o status das abas e contagem de registros em tempo real.
+- [x] **T04 — Bateria dos 7 Testes de Persistência Real:** Função `apiRunFullPersistenceValidation()` e `runDatabaseDiagnostics()` validam:
+  1. Conexão com a planilha
+  2. Leitura dos cabeçalhos
+  3. Criação de registro de teste (`TEST_`)
+  4. Leitura imediata do registro criado
+  5. Atualização desse registro
+  6. Exclusão física do registro de teste
+  7. Confirmação de preservação dos demais registros (contagem idêntica)
+- [x] **T05 — Tratamento de Erros e Timeouts:** Requisições inválidas ou tabelas não permitidas são rejeitadas por `Security.gs` com mensagens seguras e compreensíveis.
+- [x] **T06 — Bloqueio de Concorrência (LockService):** Operações críticas de escrita utilizam `LockService.getScriptLock()` com espera de até 30s.
+
 
 ---
 
