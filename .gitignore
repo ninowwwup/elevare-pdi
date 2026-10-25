@@ -25,3 +25,7 @@ $RECYCLE.BIN/
 *.log
 scratch/
 tmp/
+
+# Workflow local (descomente ou envie via GitHub Web se o token não tiver escopo 'workflow')
+.github/
+
