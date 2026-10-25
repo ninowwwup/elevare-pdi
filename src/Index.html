@@ -1190,32 +1190,62 @@
         <form id="form-livro" onsubmit="return false;">
           <input type="hidden" id="livro-field-id" value="" />
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Título da Obra *</label>
-              <input type="text" class="form-control" id="livro-field-titulo" placeholder="Ex: Clean Architecture" required />
+          <div style="display: grid; grid-template-columns: 1fr 180px; gap: 1.5rem; align-items: start; margin-bottom: 1.25rem;">
+            <!-- Coluna de Campos de Capa e Identificação -->
+            <div>
+              <div class="form-group">
+                <label class="form-label">Capa do Livro (Imagem Frontal 3D)</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <input type="text" class="form-control" id="livro-field-capa-url" placeholder="Cole o link da imagem (URL) ou carregue..." oninput="App.updateModalLivroPreview()" />
+                  <input type="file" id="livro-cover-file" accept="image/*" style="display: none;" onchange="App.handleCoverFileUpload(this)" />
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('livro-cover-file').click()" title="Carregar imagem do seu computador">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>Carregar</span>
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="App.clearCoverImage()" title="Limpar capa">Limpar</button>
+                </div>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">
+                  Dica: Carregue uma imagem ou cole o link da capa (ex: Google Imagens, Amazon). O sistema otimiza o arquivo automaticamente para o seu Google Sheets.
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Título da Obra *</label>
+                  <input type="text" class="form-control" id="livro-field-titulo" placeholder="Ex: Quem Pensa Enriquece" required oninput="App.updateModalLivroPreview()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Autor *</label>
+                  <input type="text" class="form-control" id="livro-field-autor" placeholder="Ex: Napoleon Hill" required oninput="App.updateModalLivroPreview()" />
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Autor *</label>
-              <input type="text" class="form-control" id="livro-field-autor" placeholder="Ex: Robert C. Martin" required />
+
+            <!-- Coluna de Pré-visualização 3D em Tempo Real -->
+            <div style="text-align: center;">
+              <label class="form-label" style="font-size: 0.78rem; text-transform: uppercase;">Visualização 3D</label>
+              <div class="modal-cover-preview-box" id="modal-livro-preview-box">
+                <!-- Injetado dinamicamente via JS -->
+              </div>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Categoria</label>
-              <input type="text" class="form-control" id="livro-field-categoria" placeholder="Ex: Engenharia de Software, Liderança" />
+              <input type="text" class="form-control" id="livro-field-categoria" placeholder="Ex: Desenvolvimento Pessoal, Finanças" oninput="App.updateModalLivroPreview()" />
             </div>
             <div class="form-group">
-              <label class="form-label">Cor da Lombada 3D</label>
-              <select class="form-control" id="livro-field-cor">
+              <label class="form-label">Cor Base / Lombada 3D</label>
+              <select class="form-control" id="livro-field-cor" onchange="App.updateModalLivroPreview()">
                 <option value="#3b82f6" selected>Azul Royal (#3b82f6)</option>
                 <option value="#8b5cf6">Roxo Violeta (#8b5cf6)</option>
                 <option value="#10b981">Verde Esmeralda (#10b981)</option>
-                <option value="#ef4444">Bordô Carmim (#ef4444)</option>
-                <option value="#f59e0b">Âmbar Dourado (#f59e0b)</option>
+                <option value="#b91c1c">Vinho Carmim (#b91c1c)</option>
+                <option value="#d97706">Âmbar Dourado (#d97706)</option>
                 <option value="#06b6d4">Ciano Oceano (#06b6d4)</option>
-                <option value="#374151">Grafite Escuro (#374151)</option>
+                <option value="#1e293b">Grafite Escuro (#1e293b)</option>
+                <option value="#000000">Preto Clássico (#000000)</option>
               </select>
             </div>
           </div>
@@ -1256,7 +1286,7 @@
 
           <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.88rem;">
-              <input type="checkbox" id="livro-field-favorito" />
+              <input type="checkbox" id="livro-field-favorito" onchange="App.updateModalLivroPreview()" />
               <span>Marcar como Leitura Favorita ⭐</span>
             </label>
           </div>

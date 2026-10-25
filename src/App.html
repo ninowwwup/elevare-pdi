@@ -1436,15 +1436,49 @@
 
         for (var b = 0; b < shelf.items.length; b++) {
           var livro = shelf.items[b];
-          var cor = livro.capa_cor || '#3b82f6';
+          var cor = livro.capa_cor || '#1e1b4b';
           var isFav = Boolean(livro.favorito);
+          var hasCover = Boolean(livro.capa_url);
+
+          var coverInnerHtml = '';
+          if (hasCover) {
+            coverInnerHtml = 
+              '<img src="' + UI.escapeHtml(livro.capa_url) + '" class="book-3d-cover-img" alt="' + UI.escapeHtml(livro.titulo) + '" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';" />' +
+              '<div class="book-3d-cover-fallback" style="display:none; background: linear-gradient(145deg, ' + cor + ', #090d16);">' +
+                '<div class="book-3d-gold-frame">' +
+                  '<div class="book-3d-cover-author">' + UI.escapeHtml(livro.autor) + '</div>' +
+                  '<div class="book-3d-cover-title">' + UI.escapeHtml(livro.titulo) + '</div>' +
+                  '<div class="book-3d-cover-cat">' + UI.escapeHtml(livro.categoria || 'Leitura') + '</div>' +
+                '</div>' +
+              '</div>';
+          } else {
+            coverInnerHtml = 
+              '<div class="book-3d-cover-fallback" style="background: linear-gradient(145deg, ' + cor + ', #090d16);">' +
+                '<div class="book-3d-gold-frame">' +
+                  '<div class="book-3d-cover-author">' + UI.escapeHtml(livro.autor) + '</div>' +
+                  '<div class="book-3d-cover-title">' + UI.escapeHtml(livro.titulo) + '</div>' +
+                  '<div class="book-3d-cover-cat">' + UI.escapeHtml(livro.categoria || 'Leitura') + '</div>' +
+                '</div>' +
+              '</div>';
+          }
 
           html += 
-            '<div class="book-item-3d" title="' + UI.escapeHtml(livro.titulo) + ' — ' + UI.escapeHtml(livro.autor) + '" onclick="App.openEditLivroModal(\'' + livro.id + '\')">' +
-              '<div class="book-item-spine" style="background:' + cor + ';">' +
-                (isFav ? '<div class="book-ribbon"></div>' : '') +
-                '<span class="book-spine-text">' + UI.escapeHtml(livro.titulo) + '</span>' +
-                '<span class="book-spine-author">' + UI.escapeHtml(livro.autor) + '</span>' +
+            '<div class="book-3d-wrapper" onclick="App.openEditLivroModal(\'' + livro.id + '\')" title="' + UI.escapeHtml(livro.titulo) + ' — ' + UI.escapeHtml(livro.autor) + '">' +
+              '<div class="book-3d" style="--book-color: ' + cor + ';">' +
+                '<div class="book-3d-shadow"></div>' +
+                '<div class="book-3d-spine" style="background:' + cor + ';">' +
+                  '<span class="book-3d-spine-text">' + UI.escapeHtml(livro.titulo) + '</span>' +
+                  '<span class="book-3d-spine-author">' + UI.escapeHtml(livro.autor) + '</span>' +
+                '</div>' +
+                '<div class="book-3d-pages-top"></div>' +
+                '<div class="book-3d-pages-right"></div>' +
+                '<div class="book-3d-back" style="background:' + cor + ';"></div>' +
+                '<div class="book-3d-cover" style="background:' + cor + ';">' +
+                  coverInnerHtml +
+                  '<div class="book-3d-spine-crease"></div>' +
+                  '<div class="book-3d-cover-glare"></div>' +
+                  (isFav ? '<div class="book-ribbon"></div>' : '') +
+                '</div>' +
               '</div>' +
             '</div>';
         }
@@ -1475,7 +1509,9 @@
           '<div class="skill-card">' +
             '<div class="skill-card-top">' +
               '<div style="display:flex; align-items:center; gap:0.6rem;">' +
-                '<div style="width:16px; height:24px; border-radius:2px; background:' + cor + '; flex-shrink:0;"></div>' +
+                (livro.capa_url 
+                  ? '<img src="' + UI.escapeHtml(livro.capa_url) + '" style="width:28px; height:40px; object-fit:cover; border-radius:2px; flex-shrink:0;" />'
+                  : '<div style="width:24px; height:34px; border-radius:2px; background:' + cor + '; flex-shrink:0;"></div>') +
                 '<div>' +
                   '<div class="skill-name">' + UI.escapeHtml(livro.titulo) + '</div>' +
                   '<div class="skill-category">' + UI.escapeHtml(livro.autor) + ' &bull; ' + UI.escapeHtml(livro.categoria || 'Geral') + '</div>' +
@@ -1508,9 +1544,128 @@
       container.innerHTML = html;
     }
 
+    function updateModalLivroPreview() {
+      var previewBox = document.getElementById('modal-livro-preview-box');
+      if (!previewBox) return;
+
+      var tituloEl = document.getElementById('livro-field-titulo');
+      var autorEl = document.getElementById('livro-field-autor');
+      var catEl = document.getElementById('livro-field-categoria');
+      var corEl = document.getElementById('livro-field-cor');
+      var capaEl = document.getElementById('livro-field-capa-url');
+      var favEl = document.getElementById('livro-field-favorito');
+
+      var titulo = (tituloEl && tituloEl.value ? tituloEl.value : 'Título da Obra').trim();
+      var autor = (autorEl && autorEl.value ? autorEl.value : 'Autor').trim();
+      var categoria = (catEl && catEl.value ? catEl.value : 'Leitura').trim();
+      var cor = (corEl ? corEl.value : '#3b82f6') || '#3b82f6';
+      var capaUrl = (capaEl ? capaEl.value : '').trim();
+      var isFav = favEl ? favEl.checked : false;
+
+      var coverInner = '';
+      if (capaUrl) {
+        coverInner = 
+          '<img src="' + UI.escapeHtml(capaUrl) + '" class="book-3d-cover-img" alt="Capa" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';" />' +
+          '<div class="book-3d-cover-fallback" style="display:none; background: linear-gradient(145deg, ' + cor + ', #090d16);">' +
+            '<div class="book-3d-gold-frame">' +
+              '<div class="book-3d-cover-author">' + UI.escapeHtml(autor) + '</div>' +
+              '<div class="book-3d-cover-title">' + UI.escapeHtml(titulo) + '</div>' +
+              '<div class="book-3d-cover-cat">' + UI.escapeHtml(categoria) + '</div>' +
+            '</div>' +
+          '</div>';
+      } else {
+        coverInner = 
+          '<div class="book-3d-cover-fallback" style="background: linear-gradient(145deg, ' + cor + ', #090d16);">' +
+            '<div class="book-3d-gold-frame">' +
+              '<div class="book-3d-cover-author">' + UI.escapeHtml(autor) + '</div>' +
+              '<div class="book-3d-cover-title">' + UI.escapeHtml(titulo) + '</div>' +
+              '<div class="book-3d-cover-cat">' + UI.escapeHtml(categoria) + '</div>' +
+            '</div>' +
+          '</div>';
+      }
+
+      previewBox.innerHTML = 
+        '<div class="book-3d-wrapper" style="cursor:default; margin:0 auto; transform:scale(0.85); transform-origin:center center;">' +
+          '<div class="book-3d" style="--book-color: ' + cor + '; transform: rotateY(-22deg) rotateX(2deg);">' +
+            '<div class="book-3d-shadow"></div>' +
+            '<div class="book-3d-spine" style="background:' + cor + ';">' +
+              '<span class="book-3d-spine-text">' + UI.escapeHtml(titulo) + '</span>' +
+              '<span class="book-3d-spine-author">' + UI.escapeHtml(autor) + '</span>' +
+            '</div>' +
+            '<div class="book-3d-pages-top"></div>' +
+            '<div class="book-3d-pages-right"></div>' +
+            '<div class="book-3d-back" style="background:' + cor + ';"></div>' +
+            '<div class="book-3d-cover" style="background:' + cor + ';">' +
+              coverInner +
+              '<div class="book-3d-spine-crease"></div>' +
+              '<div class="book-3d-cover-glare"></div>' +
+              (isFav ? '<div class="book-ribbon"></div>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function handleCoverFileUpload(fileInput) {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      if (!file.type.match('image.*')) {
+        UI.showToast('Arquivo Inválido', 'Por favor, selecione uma imagem válida (JPG, PNG, WebP).', 'warning');
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var maxW = 400;
+          var maxH = 600;
+          var w = img.width;
+          var h = img.height;
+
+          if (w > maxW || h > maxH) {
+            if (w / maxW > h / maxH) {
+              h = Math.round((h * maxW) / w);
+              w = maxW;
+            } else {
+              w = Math.round((w * maxH) / h);
+              h = maxH;
+            }
+          }
+
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          var urlInput = document.getElementById('livro-field-capa-url');
+          if (urlInput) {
+            urlInput.value = dataUrl;
+            updateModalLivroPreview();
+          }
+          UI.showToast('Imagem Carregada', 'Capa importada e otimizada!', 'success', 2500);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearCoverImage() {
+      var urlInput = document.getElementById('livro-field-capa-url');
+      var fileInput = document.getElementById('livro-cover-file');
+      if (urlInput) urlInput.value = '';
+      if (fileInput) fileInput.value = '';
+      updateModalLivroPreview();
+      UI.showToast('Capa Redefinida', 'Capa revertida para o design clássico.', 'info', 2000);
+    }
+
     function openCreateLivroModal() {
       document.getElementById('livro-modal-title').textContent = 'Adicionar Livro';
       document.getElementById('livro-field-id').value = '';
+      document.getElementById('livro-field-capa-url').value = '';
+      if (document.getElementById('livro-cover-file')) document.getElementById('livro-cover-file').value = '';
       document.getElementById('livro-field-titulo').value = '';
       document.getElementById('livro-field-autor').value = '';
       document.getElementById('livro-field-categoria').value = '';
@@ -1522,6 +1677,8 @@
       document.getElementById('livro-field-favorito').checked = false;
       document.getElementById('livro-field-resumo').value = '';
       document.getElementById('livro-field-aprendizados').value = '';
+
+      updateModalLivroPreview();
       UI.openModal('modal-livro-form');
     }
 
@@ -1531,6 +1688,8 @@
 
       document.getElementById('livro-modal-title').textContent = 'Editar Livro';
       document.getElementById('livro-field-id').value = item.id;
+      document.getElementById('livro-field-capa-url').value = item.capa_url || '';
+      if (document.getElementById('livro-cover-file')) document.getElementById('livro-cover-file').value = '';
       document.getElementById('livro-field-titulo').value = item.titulo || '';
       document.getElementById('livro-field-autor').value = item.autor || '';
       document.getElementById('livro-field-categoria').value = item.categoria || '';
@@ -1542,6 +1701,8 @@
       document.getElementById('livro-field-favorito').checked = Boolean(item.favorito);
       document.getElementById('livro-field-resumo').value = item.resumo || '';
       document.getElementById('livro-field-aprendizados').value = item.principais_aprendizados || '';
+
+      updateModalLivroPreview();
       UI.openModal('modal-livro-form');
     }
 
@@ -1552,6 +1713,7 @@
       var autor = document.getElementById('livro-field-autor').value.trim();
       var totalPaginas = Number(document.getElementById('livro-field-paginas').value);
       var pagAtual = Number(document.getElementById('livro-field-pagina-atual').value) || 0;
+      var capaUrl = (document.getElementById('livro-field-capa-url').value || '').trim();
 
       if (!titulo || !autor || !totalPaginas) {
         UI.showToast('Campos Obrigatórios', 'Preencha o título, autor e total de páginas.', 'warning');
@@ -1564,6 +1726,7 @@
         titulo: titulo,
         autor: autor,
         categoria: document.getElementById('livro-field-categoria').value.trim(),
+        capa_url: capaUrl,
         capa_cor: document.getElementById('livro-field-cor').value,
         total_paginas: totalPaginas,
         pagina_atual: pagAtual,
@@ -1583,7 +1746,7 @@
         .then(function () {
           UI.setLoading(btn, false);
           UI.closeModal('modal-livro-form');
-          UI.showToast('Sucesso', 'Livro salvo na sua estante!', 'success');
+          UI.showToast('Sucesso', 'Livro e capa salvos na sua estante!', 'success');
           loadLivrosList();
           loadDashboardData();
         })
@@ -1992,6 +2155,9 @@
       saveLivroRecord: saveLivroRecord,
       openSessaoLeituraModal: openSessaoLeituraModal,
       saveSessaoLeitura: saveSessaoLeitura,
+      updateModalLivroPreview: updateModalLivroPreview,
+      handleCoverFileUpload: handleCoverFileUpload,
+      clearCoverImage: clearCoverImage,
       // Exclusão Segura
       requestDeleteRecord: requestDeleteRecord,
       executeDeleteRecord: executeDeleteRecord
