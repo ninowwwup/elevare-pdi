@@ -1492,4 +1492,168 @@
     gap: 0.2rem;
     color: #f59e0b;
   }
+
+  /* ==========================================================================
+     MÉTODO SWOT (ANÁLISE FOFA 2x2)
+     ========================================================================== */
+
+  .swot-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .swot-stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .swot-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-medium);
+  }
+
+  .swot-stat-card.forca { border-left: 4px solid #10b981; }
+  .swot-stat-card.fraqueza { border-left: 4px solid #f59e0b; }
+  .swot-stat-card.oportunidade { border-left: 4px solid #06b6d4; }
+  .swot-stat-card.ameaca { border-left: 4px solid #ef4444; }
+
+  .swot-matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .swot-quadrant {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 1.35rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .swot-quadrant::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+  }
+
+  .swot-quadrant.quadrant-forca::before { background: linear-gradient(90deg, #10b981, #34d399); }
+  .swot-quadrant.quadrant-fraqueza::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .swot-quadrant.quadrant-oportunidade::before { background: linear-gradient(90deg, #06b6d4, #38bdf8); }
+  .swot-quadrant.quadrant-ameaca::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+  .swot-quadrant-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .swot-quadrant-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .swot-quadrant-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+  }
+
+  .swot-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+  }
+
+  .swot-item-card {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1rem;
+    transition: all var(--transition-fast);
+  }
+
+  .swot-item-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .swot-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .swot-item-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.35;
+  }
+
+  .swot-item-desc {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 0.5rem;
+  }
+
+  .swot-item-strategy {
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border-left: 3px solid var(--accent-violet);
+    padding: 0.45rem 0.65rem;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: 0.6rem;
+  }
+
+  .swot-item-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  @media (max-width: 1024px) {
+    .swot-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .swot-matrix-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .swot-summary-grid { grid-template-columns: 1fr; }
+  }
 </style>

@@ -9,6 +9,7 @@
     var state = {
       activePane: 'pane-dashboard',
       pdiList: [],
+      swotList: [],
       skillsList: [],
       metasList: [],
       acoesList: [],
@@ -126,6 +127,8 @@
         loadDashboardData();
       } else if (targetPaneId === 'pane-pdi') {
         loadPdiList();
+      } else if (targetPaneId === 'pane-swot') {
+        loadSwotList();
       } else if (targetPaneId === 'pane-skills') {
         loadSkillsList();
       } else if (targetPaneId === 'pane-metas') {
@@ -160,6 +163,9 @@
         if (state.activePane === 'pane-pdi') {
           var pdiInput = document.getElementById('pdi-search-input');
           if (pdiInput) { pdiInput.value = query; filterPdiList(); }
+        } else if (state.activePane === 'pane-swot') {
+          var swotInput = document.getElementById('swot-search-input');
+          if (swotInput) { swotInput.value = query; filterSwotList(); }
         } else if (state.activePane === 'pane-skills') {
           var skillInput = document.getElementById('skills-search-input');
           if (skillInput) { skillInput.value = query; filterSkillsList(); }
@@ -518,6 +524,287 @@
         .catch(function (err) {
           UI.setLoading(btn, false);
           UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    /* ==========================================================================
+       1.5. MÓDULO: MÉTODO SWOT (ANÁLISE FOFA 2x2)
+       ========================================================================== */
+
+    function loadSwotList() {
+      var quads = ['forca', 'fraqueza', 'oportunidade', 'ameaca'];
+      for (var q = 0; q < quads.length; q++) {
+        var el = document.getElementById('swot-list-' + quads[q]);
+        if (el) {
+          el.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-muted); font-size:0.85rem;"><span class="spinner"></span> Carregando...</div>';
+        }
+      }
+
+      ApiClient.call('apiListRecords', 'SWOT')
+        .then(function (records) {
+          state.swotList = (records || []).filter(function (r) {
+            return r.status !== 'arquivado';
+          });
+          filterSwotList();
+        })
+        .catch(function (err) {
+          for (var i = 0; i < quads.length; i++) {
+            var container = document.getElementById('swot-list-' + quads[i]);
+            if (container) {
+              container.innerHTML = '<div class="empty-state" style="padding:1.5rem;"><div class="empty-state-title" style="color:var(--status-error); font-size:0.9rem;">Erro ao carregar SWOT</div><div class="empty-state-desc">' + UI.escapeHtml(err.message) + '</div></div>';
+            }
+          }
+        });
+    }
+
+    function filterSwotList() {
+      var searchInput = document.getElementById('swot-search-input');
+      var impactoSelect = document.getElementById('swot-filter-impacto');
+      var statusSelect = document.getElementById('swot-filter-status');
+
+      var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      var impactoFilter = impactoSelect ? impactoSelect.value : 'todos';
+      var statusFilter = statusSelect ? statusSelect.value : 'todos';
+
+      // Atualiza contadores totais nos cards de topo
+      var totalForca = 0;
+      var totalFraqueza = 0;
+      var totalOportunidade = 0;
+      var totalAmeaca = 0;
+
+      for (var c = 0; c < state.swotList.length; c++) {
+        var qType = String(state.swotList[c].quadrante || '').toLowerCase();
+        if (qType === 'forca') totalForca++;
+        else if (qType === 'fraqueza') totalFraqueza++;
+        else if (qType === 'oportunidade') totalOportunidade++;
+        else if (qType === 'ameaca') totalAmeaca++;
+      }
+
+      var countForcaEl = document.getElementById('swot-count-forca');
+      var countFraquezaEl = document.getElementById('swot-count-fraqueza');
+      var countOportunidadeEl = document.getElementById('swot-count-oportunidade');
+      var countAmeacaEl = document.getElementById('swot-count-ameaca');
+
+      if (countForcaEl) countForcaEl.textContent = totalForca;
+      if (countFraquezaEl) countFraquezaEl.textContent = totalFraqueza;
+      if (countOportunidadeEl) countOportunidadeEl.textContent = totalOportunidade;
+      if (countAmeacaEl) countAmeacaEl.textContent = totalAmeaca;
+
+      var filtered = state.swotList.filter(function (item) {
+        var matchImpacto = (impactoFilter === 'todos') || (item.impacto === impactoFilter);
+        var matchStatus = (statusFilter === 'todos') || (item.status === statusFilter);
+        var textMatch = !query ||
+          (item.titulo && item.titulo.toLowerCase().indexOf(query) !== -1) ||
+          (item.descricao && item.descricao.toLowerCase().indexOf(query) !== -1) ||
+          (item.estrategia_cruzada && item.estrategia_cruzada.toLowerCase().indexOf(query) !== -1) ||
+          (item.competencia_relacionada && item.competencia_relacionada.toLowerCase().indexOf(query) !== -1);
+
+        return matchImpacto && matchStatus && textMatch;
+      });
+
+      renderSwotMatrix(filtered);
+    }
+
+    function renderSwotMatrix(list) {
+      var quadrantConfigs = [
+        { key: 'forca', emptyTitle: 'Nenhuma Força mapeada', emptyDesc: 'Adicione seus pontos fortes, talentos e diferenciais técnicos ou comportamentais.', btnLabel: '+ Adicionar Força' },
+        { key: 'fraqueza', emptyTitle: 'Nenhuma Fraqueza mapeada', emptyDesc: 'Identifique lacunas ou pontos internos que precisam de evolução no seu PDI.', btnLabel: '+ Adicionar Fraqueza' },
+        { key: 'oportunidade', emptyTitle: 'Nenhuma Oportunidade mapeada', emptyDesc: 'Registre tendências do mercado, novos projetos ou aberturas na carreira.', btnLabel: '+ Adicionar Oportunidade' },
+        { key: 'ameaca', emptyTitle: 'Nenhuma Ameaça mapeada', emptyDesc: 'Antecipe riscos externos, mudanças tecnológicas ou obstáculos do ambiente.', btnLabel: '+ Adicionar Ameaça' }
+      ];
+
+      for (var q = 0; q < quadrantConfigs.length; q++) {
+        var cfg = quadrantConfigs[q];
+        var container = document.getElementById('swot-list-' + cfg.key);
+        var badgeEl = document.getElementById('swot-badge-' + cfg.key);
+        if (!container) continue;
+
+        var items = list.filter(function (item) {
+          return String(item.quadrante || '').toLowerCase() === cfg.key;
+        });
+
+        if (badgeEl) badgeEl.textContent = items.length;
+
+        if (items.length === 0) {
+          container.innerHTML =
+            '<div class="empty-state" style="padding: 1.75rem 1rem;">' +
+              '<div class="empty-state-title" style="font-size: 0.92rem;">' + cfg.emptyTitle + '</div>' +
+              '<div class="empty-state-desc" style="font-size: 0.8rem; margin-bottom: 0.85rem;">' + cfg.emptyDesc + '</div>' +
+              '<button class="btn btn-secondary btn-sm" onclick="App.openCreateSwotModal(\'' + cfg.key + '\')">' + cfg.btnLabel + '</button>' +
+            '</div>';
+          continue;
+        }
+
+        var html = '';
+        for (var i = 0; i < items.length; i++) {
+          var s = items[i];
+          var impBadge = s.impacto === 'alto' ? 'badge-error' : (s.impacto === 'medio' ? 'badge-warning' : 'badge-info');
+          var impLabel = s.impacto === 'alto' ? 'Impacto Alto' : (s.impacto === 'medio' ? 'Impacto Médio' : 'Impacto Baixo');
+
+          var statusBadge = 'badge-info';
+          var statusLabel = 'Ativo';
+          if (s.status === 'em_acao') {
+            statusBadge = 'badge-violet';
+            statusLabel = 'Em Ação no PDI';
+          } else if (s.status === 'resolvido') {
+            statusBadge = 'badge-success';
+            statusLabel = 'Consolidado';
+          }
+
+          html +=
+            '<div class="swot-item-card">' +
+              '<div class="swot-item-top">' +
+                '<div class="swot-item-title">' + UI.escapeHtml(s.titulo) + '</div>' +
+                '<div style="display:flex; gap:0.35rem; flex-shrink:0; flex-wrap:wrap;">' +
+                  '<span class="badge ' + impBadge + '">' + impLabel + '</span>' +
+                  '<span class="badge ' + statusBadge + '">' + statusLabel + '</span>' +
+                '</div>' +
+              '</div>' +
+              (s.descricao ? '<div class="swot-item-desc">' + UI.escapeHtml(s.descricao) + '</div>' : '') +
+              (s.estrategia_cruzada ? '<div class="swot-item-strategy"><strong>Estratégia:</strong> ' + UI.escapeHtml(s.estrategia_cruzada) + '</div>' : '') +
+              '<div class="swot-item-footer">' +
+                '<div>' +
+                  (s.competencia_relacionada ? '<span class="tag-pill" style="margin:0;">🎯 ' + UI.escapeHtml(s.competencia_relacionada) + '</span>' : '<span style="font-size:0.74rem; color:var(--text-muted);">Fator estratégico</span>') +
+                '</div>' +
+                '<div style="display:flex; gap:0.4rem; align-items:center;">' +
+                  '<button class="btn btn-primary btn-sm" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="App.openConvertSwotModal(\'' + s.id + '\')">+ Criar Ação</button>' +
+                  '<button class="btn btn-secondary btn-sm" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="App.openEditSwotModal(\'' + s.id + '\')">Editar</button>' +
+                  '<button class="btn btn-outline btn-sm" style="padding:0.25rem 0.55rem; font-size:0.75rem; color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="App.requestDeleteRecord(\'SWOT\', \'' + s.id + '\', \'' + UI.escapeHtml(s.titulo) + '\')">Excluir</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        }
+        container.innerHTML = html;
+      }
+    }
+
+    function openCreateSwotModal(defaultQuadrante) {
+      document.getElementById('swot-modal-title').textContent = 'Novo Item da Matriz SWOT';
+      document.getElementById('swot-field-id').value = '';
+      document.getElementById('swot-field-quadrante').value = defaultQuadrante || 'forca';
+      document.getElementById('swot-field-impacto').value = 'alto';
+      document.getElementById('swot-field-titulo').value = '';
+      document.getElementById('swot-field-competencia').value = '';
+      document.getElementById('swot-field-status').value = 'ativo';
+      document.getElementById('swot-field-descricao').value = '';
+      document.getElementById('swot-field-estrategia').value = '';
+      UI.openModal('modal-swot-form');
+    }
+
+    function openEditSwotModal(id) {
+      var item = state.swotList.find(function (s) { return s.id === id; });
+      if (!item) return;
+
+      document.getElementById('swot-modal-title').textContent = 'Editar Item da Matriz SWOT';
+      document.getElementById('swot-field-id').value = item.id;
+      document.getElementById('swot-field-quadrante').value = item.quadrante || 'forca';
+      document.getElementById('swot-field-impacto').value = item.impacto || 'alto';
+      document.getElementById('swot-field-titulo').value = item.titulo || '';
+      document.getElementById('swot-field-competencia').value = item.competencia_relacionada || '';
+      document.getElementById('swot-field-status').value = item.status || 'ativo';
+      document.getElementById('swot-field-descricao').value = item.descricao || '';
+      document.getElementById('swot-field-estrategia').value = item.estrategia_cruzada || '';
+      UI.openModal('modal-swot-form');
+    }
+
+    function saveSwotRecord() {
+      var btn = document.getElementById('btn-save-swot');
+      var id = document.getElementById('swot-field-id').value;
+      var quadrante = document.getElementById('swot-field-quadrante').value;
+      var titulo = document.getElementById('swot-field-titulo').value.trim();
+
+      if (!titulo) {
+        UI.showToast('Campo Obrigatório', 'Informe o título do fator mapeado na Matriz SWOT.', 'warning');
+        return;
+      }
+
+      var recordData = {
+        quadrante: quadrante,
+        impacto: document.getElementById('swot-field-impacto').value,
+        titulo: titulo,
+        competencia_relacionada: document.getElementById('swot-field-competencia').value.trim(),
+        status: document.getElementById('swot-field-status').value,
+        descricao: document.getElementById('swot-field-descricao').value.trim(),
+        estrategia_cruzada: document.getElementById('swot-field-estrategia').value.trim()
+      };
+
+      UI.setLoading(btn, true, 'Salvando...');
+      var promise = id ? ApiClient.call('apiUpdateRecord', 'SWOT', id, recordData) : ApiClient.call('apiCreateRecord', 'SWOT', recordData);
+
+      promise
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-swot-form');
+          UI.showToast('Sucesso', 'Item salvo na Matriz SWOT!', 'success');
+          loadSwotList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro ao Salvar', err.message, 'error');
+        });
+    }
+
+    function openConvertSwotModal(swotId) {
+      var item = state.swotList.find(function (s) { return s.id === swotId; });
+      if (!item) return;
+
+      var prefixoMap = {
+        forca: 'Alavancar Força: ',
+        fraqueza: 'Desenvolver / Superar: ',
+        oportunidade: 'Explorar Oportunidade: ',
+        ameaca: 'Mitigar Ameaça: '
+      };
+      var prefixo = prefixoMap[item.quadrante] || 'Ação SWOT: ';
+
+      document.getElementById('convert-swot-id').value = item.id;
+      document.getElementById('convert-swot-titulo').value = item.estrategia_cruzada ? item.estrategia_cruzada.substring(0, 65) : (prefixo + item.titulo);
+      document.getElementById('convert-swot-prazo').value = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
+      document.getElementById('convert-swot-prioridade').value = item.impacto === 'alto' ? 'alta' : (item.impacto === 'medio' ? 'media' : 'baixa');
+      document.getElementById('convert-swot-descricao').value = 'Ação originada da Matriz SWOT (' + (item.quadrante || '').toUpperCase() + '): ' + item.titulo + (item.estrategia_cruzada ? '\nEstratégia: ' + item.estrategia_cruzada : '');
+
+      var metaSelect = document.getElementById('convert-swot-meta-id');
+      if (metaSelect) {
+        metaSelect.innerHTML = '<option value="">Ação Avulsa (Sem meta vinculada)</option>';
+        for (var m = 0; m < state.metasList.length; m++) {
+          var meta = state.metasList[m];
+          metaSelect.innerHTML += '<option value="' + meta.id + '">' + UI.escapeHtml(meta.titulo) + '</option>';
+        }
+      }
+
+      UI.openModal('modal-swot-convert');
+    }
+
+    function confirmConvertSwot() {
+      var btn = document.getElementById('btn-convert-swot');
+      var swotId = document.getElementById('convert-swot-id').value;
+      var titulo = document.getElementById('convert-swot-titulo').value.trim();
+
+      if (!titulo) {
+        UI.showToast('Campo Obrigatório', 'Informe o título da ação.', 'warning');
+        return;
+      }
+
+      var acaoData = {
+        titulo: titulo,
+        prazo: document.getElementById('convert-swot-prazo').value,
+        prioridade: document.getElementById('convert-swot-prioridade').value,
+        descricao: document.getElementById('convert-swot-descricao').value.trim(),
+        meta_id: document.getElementById('convert-swot-meta-id').value
+      };
+
+      UI.setLoading(btn, true, 'Convertendo...');
+      ApiClient.call('apiConvertSwotToAction', swotId, acaoData)
+        .then(function () {
+          UI.setLoading(btn, false);
+          UI.closeModal('modal-swot-convert');
+          UI.showToast('Ação Estratégica Criada!', 'Item SWOT marcado como "Em Ação" e tarefa adicionada ao PDI!', 'success');
+          loadSwotList();
+          loadDashboardData();
+        })
+        .catch(function (err) {
+          UI.setLoading(btn, false);
+          UI.showToast('Erro na Conversão', err.message, 'error');
         });
     }
 
@@ -1840,6 +2127,7 @@
 
           // Recarrega módulo ativo
           if (info.table === 'PLANOS_PDI') loadPdiList();
+          if (info.table === 'SWOT') loadSwotList();
           if (info.table === 'COMPETENCIAS') loadSkillsList();
           if (info.table === 'METAS' || info.table === 'ACOES') loadMetasList();
           if (info.table === 'FEEDBACKS') loadFeedbacksList();
@@ -1877,6 +2165,14 @@
           cargo_desejado: 'A definir',
           objetivo_profissional: desc || title,
           data_inicio: hoje,
+          status: 'ativo'
+        };
+      } else if (targetTable === 'SWOT') {
+        recordData = {
+          quadrante: 'forca',
+          titulo: title,
+          descricao: desc,
+          impacto: 'alto',
           status: 'ativo'
         };
       } else if (targetTable === 'METAS') {
@@ -1943,6 +2239,7 @@
           // Atualiza a visão correspondente
           loadDashboardData();
           if (state.activePane === 'pane-pdi') loadPdiList();
+          if (state.activePane === 'pane-swot') loadSwotList();
           if (state.activePane === 'pane-skills') loadSkillsList();
           if (state.activePane === 'pane-metas') loadMetasList();
           if (state.activePane === 'pane-feedbacks') loadFeedbacksList();
@@ -2120,6 +2417,14 @@
       openCreatePdiModal: openCreatePdiModal,
       openEditPdiModal: openEditPdiModal,
       savePdiRecord: savePdiRecord,
+      // Método SWOT
+      loadSwotList: loadSwotList,
+      filterSwotList: filterSwotList,
+      openCreateSwotModal: openCreateSwotModal,
+      openEditSwotModal: openEditSwotModal,
+      saveSwotRecord: saveSwotRecord,
+      openConvertSwotModal: openConvertSwotModal,
+      confirmConvertSwot: confirmConvertSwot,
       // Skills
       loadSkillsList: loadSkillsList,
       filterSkillsList: filterSkillsList,

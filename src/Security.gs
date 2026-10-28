@@ -7,6 +7,7 @@ var Security = (function () {
   // Lista estrita de tabelas permitidas no banco de dados (Whitelist)
   var ALLOWED_TABLES = [
     'PLANOS_PDI',
+    'SWOT',
     'CONFIG',
     'MODULOS',
     'CAMPOS_CUSTOM',

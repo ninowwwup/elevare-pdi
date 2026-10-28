@@ -42,6 +42,7 @@ var Validation = (function () {
    */
   var REQUIRED_FIELDS = {
     PLANOS_PDI: ['titulo', 'objetivo_profissional', 'status'],
+    SWOT: ['quadrante', 'titulo', 'impacto', 'status'],
     CONFIG: ['chave', 'valor'],
     MODULOS: ['id', 'nome', 'ativo', 'ordem'],
     CAMPOS_CUSTOM: ['modulo_id', 'campo_nome', 'campo_chave', 'tipo'],
@@ -121,6 +122,13 @@ var Validation = (function () {
       var lidas = Number(record.paginas_lidas);
       if (!isNaN(lidas) && lidas < 0) {
         throw new Error('A quantidade de páginas lidas não pode ser negativa.');
+      }
+    }
+
+    if (tableName === 'SWOT' && record.quadrante !== undefined) {
+      var quadrantesValidos = ['forca', 'fraqueza', 'oportunidade', 'ameaca'];
+      if (quadrantesValidos.indexOf(String(record.quadrante).toLowerCase()) === -1) {
+        throw new Error('Quadrante SWOT inválido. Use: forca, fraqueza, oportunidade ou ameaca.');
       }
     }
 

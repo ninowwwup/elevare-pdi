@@ -27,6 +27,20 @@ var Database = (function () {
       'created_at',
       'updated_at'
     ],
+    SWOT: [
+      'id',
+      'quadrante',
+      'titulo',
+      'descricao',
+      'impacto',
+      'estrategia_cruzada',
+      'competencia_relacionada',
+      'meta_id',
+      'status',
+      'custom_fields',
+      'created_at',
+      'updated_at'
+    ],
     CONFIG: [
       'chave',
       'valor',
@@ -445,15 +459,16 @@ var Database = (function () {
       var defaultModules = [
         ['mod_dashboard', 'Dashboard', 'layout-dashboard', true, 1, 'Visão geral e indicadores', now, now],
         ['mod_pdi', 'Meu PDI', 'compass', true, 2, 'Planos de desenvolvimento', now, now],
-        ['mod_skills', 'Hard & Soft Skills', 'sparkles', true, 3, 'Matriz de competências e autoavaliação', now, now],
-        ['mod_metas', 'Metas & Ações', 'target', true, 4, 'Metas SMART e plano de ação', now, now],
-        ['mod_feedbacks', 'Feedbacks', 'message-square', true, 5, 'Registro e acompanhamento de feedbacks', now, now],
-        ['mod_biblioteca', 'Biblioteca 3D', 'book-open', true, 6, 'Estante tridimensional de leituras', now, now],
-        ['mod_evidencias', 'Evidências', 'award', true, 7, 'Repositório de comprovações de impacto', now, now],
-        ['mod_aprendizados', 'Aprendizados', 'lightbulb', true, 8, 'Anotações e insights práticos', now, now],
-        ['mod_cursos', 'Cursos & Certificações', 'graduation-cap', true, 9, 'Treinamentos e formações', now, now],
-        ['mod_reunioes', 'Reuniões 1:1', 'users', true, 10, 'Acompanhamento com a liderança', now, now],
-        ['mod_configuracoes', 'Configurações', 'settings', true, 11, 'Personalização de módulos e campos', now, now]
+        ['mod_swot', 'Método SWOT', 'grid', true, 3, 'Matriz de Forças, Fraquezas, Oportunidades e Ameaças', now, now],
+        ['mod_skills', 'Hard & Soft Skills', 'sparkles', true, 4, 'Matriz de competências e autoavaliação', now, now],
+        ['mod_metas', 'Metas & Ações', 'target', true, 5, 'Metas SMART e plano de ação', now, now],
+        ['mod_feedbacks', 'Feedbacks', 'message-square', true, 6, 'Registro e acompanhamento de feedbacks', now, now],
+        ['mod_biblioteca', 'Biblioteca 3D', 'book-open', true, 7, 'Estante tridimensional de leituras', now, now],
+        ['mod_evidencias', 'Evidências', 'award', true, 8, 'Repositório de comprovações de impacto', now, now],
+        ['mod_aprendizados', 'Aprendizados', 'lightbulb', true, 9, 'Anotações e insights práticos', now, now],
+        ['mod_cursos', 'Cursos & Certificações', 'graduation-cap', true, 10, 'Treinamentos e formações', now, now],
+        ['mod_reunioes', 'Reuniões 1:1', 'users', true, 11, 'Acompanhamento com a liderança', now, now],
+        ['mod_configuracoes', 'Configurações', 'settings', true, 12, 'Personalização de módulos e campos', now, now]
       ];
       sheet.getRange(2, 1, defaultModules.length, defaultModules[0].length).setValues(defaultModules);
     }

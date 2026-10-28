@@ -196,6 +196,7 @@ function apiGetDashboardStats() {
     var competencias = Database.listRecords('COMPETENCIAS', { limit: 100 });
     var livros = Database.listRecords('LIVROS', { limit: 50 });
     var planos = Database.listRecords('PLANOS_PDI', { limit: 20 });
+    var swotItems = Database.listRecords('SWOT', { limit: 100 });
 
     var metasConcluidas = 0;
     var metasEmAndamento = 0;
@@ -246,7 +247,8 @@ function apiGetDashboardStats() {
         totalLivros: livros.length,
         livrosLendo: livrosLendo,
         livrosConcluidos: livrosConcluidos,
-        totalPlanosPdi: planos.length
+        totalPlanosPdi: planos.length,
+        totalSwot: swotItems.length
       },
       recentFeedbacks: feedbacks.slice(0, 5),
       priorityMetas: metas.filter(function(m) { return m.status !== 'concluida' && m.status !== 'arquivada'; }).slice(0, 5),
@@ -315,6 +317,36 @@ function apiConvertFeedbackToAction(feedbackId, acaoData) {
     });
 
     return Security.createSuccessResponse(novaAcao, 'Ação de desenvolvimento criada com sucesso a partir do feedback!');
+  } catch (err) {
+    return Security.createErrorResponse(err);
+  }
+}
+
+/**
+ * Transforma um item da Matriz SWOT em uma ação prática no plano de ação.
+ */
+function apiConvertSwotToAction(swotId, acaoData) {
+  try {
+    if (!swotId || !acaoData || !acaoData.titulo) {
+      throw new Error('Título da ação é obrigatório.');
+    }
+
+    var novaAcao = Database.insertRecord('ACOES', {
+      titulo: acaoData.titulo,
+      descricao: acaoData.descricao || '',
+      prioridade: acaoData.prioridade || 'alta',
+      prazo: acaoData.prazo || '',
+      status: 'a_fazer',
+      origem_tipo: 'swot',
+      origem_id: swotId,
+      meta_id: acaoData.meta_id || ''
+    });
+
+    Database.updateRecord('SWOT', swotId, {
+      status: 'em_acao'
+    });
+
+    return Security.createSuccessResponse(novaAcao, 'Ação estratégica criada com sucesso a partir da Matriz SWOT!');
   } catch (err) {
     return Security.createErrorResponse(err);
   }

@@ -60,6 +60,18 @@
           <span class="nav-link-text">Meu PDI</span>
         </a>
 
+        <a class="nav-link" data-pane="pane-swot" id="nav-swot">
+          <span class="nav-link-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+          </span>
+          <span class="nav-link-text">Método SWOT</span>
+        </a>
+
         <a class="nav-link" data-pane="pane-skills" id="nav-skills">
           <span class="nav-link-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -173,6 +185,7 @@
         <div class="view-tabs" style="overflow-x: auto; white-space: nowrap;">
           <button class="view-tab active" data-pane="pane-dashboard" id="tab-btn-dashboard">Dashboard</button>
           <button class="view-tab" data-pane="pane-pdi" id="tab-btn-pdi">Meu PDI</button>
+          <button class="view-tab" data-pane="pane-swot" id="tab-btn-swot">Método SWOT</button>
           <button class="view-tab" data-pane="pane-skills" id="tab-btn-skills">Competências</button>
           <button class="view-tab" data-pane="pane-metas" id="tab-btn-metas">Metas & Ações</button>
           <button class="view-tab" data-pane="pane-feedbacks" id="tab-btn-feedbacks">Feedbacks</button>
@@ -327,6 +340,160 @@
           <!-- Lista de Planos PDI -->
           <div id="pdi-list-container">
             <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- ================================================================
+             2.5. ABA: MÉTODO SWOT (ANÁLISE FOFA)
+             ================================================================ -->
+        <div class="tab-pane" id="pane-swot" style="display: none;">
+          <div class="module-header">
+            <div class="module-title-group">
+              <h1>Método SWOT — Análise Estratégica Pessoal</h1>
+              <p>Mapeie fatores internos (Forças e Fraquezas) e externos (Oportunidades e Ameaças), defina estratégias cruzadas e converta insights em ações práticas no PDI.</p>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="App.openCreateSwotModal('forca')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Novo Item SWOT</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Resumo dos 4 Quadrantes SWOT -->
+          <div class="swot-summary-grid">
+            <div class="swot-stat-card forca" onclick="App.openCreateSwotModal('forca')" title="Clique para adicionar uma Força">
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #10b981; letter-spacing: 0.04em;">Forças (Interno)</div>
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; margin-top: 0.2rem;" id="swot-count-forca">0</div>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">Diferenciais e talentos</div>
+              </div>
+              <div class="kpi-icon-badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              </div>
+            </div>
+
+            <div class="swot-stat-card fraqueza" onclick="App.openCreateSwotModal('fraqueza')" title="Clique para adicionar uma Fraqueza">
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #f59e0b; letter-spacing: 0.04em;">Fraquezas (Interno)</div>
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; margin-top: 0.2rem;" id="swot-count-fraqueza">0</div>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">Gaps e pontos de melhoria</div>
+              </div>
+              <div class="kpi-icon-badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </div>
+            </div>
+
+            <div class="swot-stat-card oportunidade" onclick="App.openCreateSwotModal('oportunidade')" title="Clique para adicionar uma Oportunidade">
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #06b6d4; letter-spacing: 0.04em;">Oportunidades (Externo)</div>
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; margin-top: 0.2rem;" id="swot-count-oportunidade">0</div>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">Tendências e cenários favoráveis</div>
+              </div>
+              <div class="kpi-icon-badge" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="swot-stat-card ameaca" onclick="App.openCreateSwotModal('ameaca')" title="Clique para adicionar uma Ameaça">
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #ef4444; letter-spacing: 0.04em;">Ameaças (Externo)</div>
+                <div style="font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; margin-top: 0.2rem;" id="swot-count-ameaca">0</div>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">Riscos e barreiras do ambiente</div>
+              </div>
+              <div class="kpi-icon-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Filtros do Método SWOT -->
+          <div class="filter-toolbar">
+            <input type="text" class="filter-search" id="swot-search-input" placeholder="Pesquisar por título, descrição, estratégia ou competência..." oninput="App.filterSwotList()" />
+            <select class="filter-select" id="swot-filter-impacto" onchange="App.filterSwotList()">
+              <option value="todos">Todos os Impactos</option>
+              <option value="alto">Alto Impacto</option>
+              <option value="medio">Médio Impacto</option>
+              <option value="baixo">Baixo Impacto</option>
+            </select>
+            <select class="filter-select" id="swot-filter-status" onchange="App.filterSwotList()">
+              <option value="todos">Todos os Status</option>
+              <option value="ativo">Ativo</option>
+              <option value="em_acao">Em Ação no PDI</option>
+              <option value="resolvido">Resolvido / Consolidado</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadSwotList()">Recarregar</button>
+          </div>
+
+          <!-- Matriz 2x2 dos 4 Quadrantes SWOT -->
+          <div class="swot-matrix-grid">
+            <!-- Quadrante 1: Forças (Strengths) -->
+            <div class="swot-quadrant quadrant-forca">
+              <div class="swot-quadrant-header">
+                <div>
+                  <div class="swot-quadrant-title" style="color: #10b981;">
+                    <span>💪 Forças (Strengths)</span>
+                    <span class="badge badge-success" id="swot-badge-forca">0</span>
+                  </div>
+                  <div class="swot-quadrant-sub">Fatores internos positivos — O que você domina e o destaca profissionalmente</div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="border-color: rgba(16, 185, 129, 0.45); color: #10b981;" onclick="App.openCreateSwotModal('forca')">+ Força</button>
+              </div>
+              <div class="swot-items-list" id="swot-list-forca">
+                <!-- Renderizado via JS -->
+              </div>
+            </div>
+
+            <!-- Quadrante 2: Fraquezas (Weaknesses) -->
+            <div class="swot-quadrant quadrant-fraqueza">
+              <div class="swot-quadrant-header">
+                <div>
+                  <div class="swot-quadrant-title" style="color: #f59e0b;">
+                    <span>🎯 Fraquezas (Weaknesses)</span>
+                    <span class="badge badge-warning" id="swot-badge-fraqueza">0</span>
+                  </div>
+                  <div class="swot-quadrant-sub">Fatores internos a desenvolver — Lacunas técnicas ou comportamentais sob seu controle</div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="border-color: rgba(245, 158, 11, 0.45); color: #f59e0b;" onclick="App.openCreateSwotModal('fraqueza')">+ Fraqueza</button>
+              </div>
+              <div class="swot-items-list" id="swot-list-fraqueza">
+                <!-- Renderizado via JS -->
+              </div>
+            </div>
+
+            <!-- Quadrante 3: Oportunidades (Opportunities) -->
+            <div class="swot-quadrant quadrant-oportunidade">
+              <div class="swot-quadrant-header">
+                <div>
+                  <div class="swot-quadrant-title" style="color: #06b6d4;">
+                    <span>🚀 Oportunidades (Opportunities)</span>
+                    <span class="badge badge-info" id="swot-badge-oportunidade">0</span>
+                  </div>
+                  <div class="swot-quadrant-sub">Fatores externos favoráveis — Projetos, tendências, mentorias e expansões na carreira</div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="border-color: rgba(6, 182, 212, 0.45); color: #06b6d4;" onclick="App.openCreateSwotModal('oportunidade')">+ Oportunidade</button>
+              </div>
+              <div class="swot-items-list" id="swot-list-oportunidade">
+                <!-- Renderizado via JS -->
+              </div>
+            </div>
+
+            <!-- Quadrante 4: Ameaças (Threats) -->
+            <div class="swot-quadrant quadrant-ameaca">
+              <div class="swot-quadrant-header">
+                <div>
+                  <div class="swot-quadrant-title" style="color: #ef4444;">
+                    <span>🛡️ Ameaças (Threats)</span>
+                    <span class="badge badge-error" id="swot-badge-ameaca">0</span>
+                  </div>
+                  <div class="swot-quadrant-sub">Fatores externos de risco — Mudanças tecnológicas, concorrência ou gargalos organizacionais</div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="border-color: rgba(239, 68, 68, 0.45); color: #ef4444;" onclick="App.openCreateSwotModal('ameaca')">+ Ameaça</button>
+              </div>
+              <div class="swot-items-list" id="swot-list-ameaca">
+                <!-- Renderizado via JS -->
+              </div>
+            </div>
           </div>
         </div>
 
@@ -647,6 +814,7 @@
             <label class="form-label">Módulo de Destino:</label>
             <select class="form-control" id="quick-target-module">
               <option value="PLANOS_PDI">Plano PDI (PLANOS_PDI)</option>
+              <option value="SWOT">Item do Método SWOT (SWOT)</option>
               <option value="COMPETENCIAS">Competência (COMPETENCIAS)</option>
               <option value="METAS">Meta SMART (METAS)</option>
               <option value="ACOES">Ação de Desenvolvimento (ACOES)</option>
@@ -748,6 +916,135 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="UI.closeModal('modal-pdi-form')">Cancelar</button>
         <button class="btn btn-primary" id="btn-save-pdi" onclick="App.savePdiRecord()">Salvar Plano PDI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 2.5: FORMULÁRIO DO MÉTODO SWOT
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-swot-form">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="swot-modal-title">Novo Item da Matriz SWOT</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-swot-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-swot" onsubmit="return false;">
+          <input type="hidden" id="swot-field-id" value="" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Quadrante SWOT *</label>
+              <select class="form-control" id="swot-field-quadrante">
+                <option value="forca">💪 Força (Interno • Positivo)</option>
+                <option value="fraqueza">🎯 Fraqueza (Interno • Ponto de Melhoria)</option>
+                <option value="oportunidade">🚀 Oportunidade (Externo • Favorável)</option>
+                <option value="ameaca">🛡️ Ameaça (Externo • Risco a Mitigar)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nível de Impacto na Carreira *</label>
+              <select class="form-control" id="swot-field-impacto">
+                <option value="alto" selected>Alto Impacto</option>
+                <option value="medio">Médio Impacto</option>
+                <option value="baixo">Baixo Impacto</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Título / Fator Mapeado *</label>
+            <input type="text" class="form-control" id="swot-field-titulo" placeholder="Ex: Domínio em arquitetura distribuída / Falta de fluência em inglês para reuniões globais" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Competência ou Área Relacionada</label>
+              <input type="text" class="form-control" id="swot-field-competencia" placeholder="Ex: Liderança Técnica, Comunicação, Cloud" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status de Acompanhamento</label>
+              <select class="form-control" id="swot-field-status">
+                <option value="ativo" selected>Ativo</option>
+                <option value="em_acao">Em Ação no PDI</option>
+                <option value="resolvido">Resolvido / Consolidado</option>
+                <option value="arquivado">Arquivado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Contexto e Análise do Fator</label>
+            <textarea class="form-control" id="swot-field-descricao" rows="2" placeholder="Por que este fator é relevante para o seu momento atual e seus objetivos?"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Estratégia Cruzada (Como Alavancar, Corrigir, Explorar ou Defender)</label>
+            <textarea class="form-control" id="swot-field-estrategia" rows="2" placeholder="Ex: Usar esta força para liderar o novo projeto X / Mitigar esta fraqueza realizando mentoria semanal..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-swot-form')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-swot" onclick="App.saveSwotRecord()">Salvar na Matriz SWOT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 2.6: CONVERTER ITEM SWOT EM AÇÃO PRÁTICA
+       ================================================================ -->
+  <div class="modal-overlay" id="modal-swot-convert">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Converter SWOT em Ação Prática</h3>
+        <button class="modal-close" onclick="UI.closeModal('modal-swot-convert')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-convert-swot" onsubmit="return false;">
+          <input type="hidden" id="convert-swot-id" value="" />
+
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Transforme este ponto da sua Matriz SWOT em uma ação concreta no plano de desenvolvimento. O status do item SWOT mudará para <strong>Em Ação no PDI</strong>.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Título da Ação *</label>
+            <input type="text" class="form-control" id="convert-swot-titulo" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Prazo de Conclusão</label>
+              <input type="date" class="form-control" id="convert-swot-prazo" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prioridade</label>
+              <select class="form-control" id="convert-swot-prioridade">
+                <option value="alta" selected>Alta</option>
+                <option value="media">Média</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Vincular à Meta SMART (Opcional):</label>
+            <select class="form-control" id="convert-swot-meta-id">
+              <option value="">Ação Avulsa (Sem meta vinculada)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descrição / Passo a Passo</label>
+            <textarea class="form-control" id="convert-swot-descricao" rows="2" placeholder="O que será feito na prática..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="UI.closeModal('modal-swot-convert')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-convert-swot" onclick="App.confirmConvertSwot()">Criar Ação no PDI</button>
       </div>
     </div>
   </div>
