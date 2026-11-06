@@ -297,22 +297,52 @@ var Database = (function () {
 
   /**
    * Retorna os cabeçalhos da primeira linha e seu mapa { nomeColuna: indice1Based }.
+   * Garante automaticamente que novas colunas definidas em TABLE_SCHEMAS (ex: capa_url em LIVROS)
+   * sejam adicionadas ao cabeçalho da aba caso ainda não existam.
    * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Aba da planilha
    * @return {{ headers: string[], map: Object.<string, number> }}
    */
   function getHeaderMap(sheet) {
+    var sheetName = sheet.getName();
+    var expectedHeaders = TABLE_SCHEMAS[sheetName];
     var lastCol = sheet.getLastColumn();
     if (lastCol === 0) {
-      return { headers: [], map: {} };
+      if (expectedHeaders && expectedHeaders.length > 0) {
+        sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+        lastCol = expectedHeaders.length;
+      } else {
+        return { headers: [], map: {} };
+      }
     }
-    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var rawHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var headers = [];
     var map = {};
-    for (var i = 0; i < headers.length; i++) {
-      var headerName = String(headers[i]).trim();
+    for (var i = 0; i < rawHeaders.length; i++) {
+      var headerName = String(rawHeaders[i]).trim();
+      headers.push(headerName);
       if (headerName) {
         map[headerName] = i + 1; // 1-indexed para o Apps Script Range
       }
     }
+
+    if (expectedHeaders && expectedHeaders.length > 0) {
+      var missing = [];
+      for (var e = 0; e < expectedHeaders.length; e++) {
+        var col = expectedHeaders[e];
+        if (!map[col]) {
+          missing.push(col);
+        }
+      }
+      if (missing.length > 0) {
+        var startCol = headers.length + 1;
+        sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
+        for (var m = 0; m < missing.length; m++) {
+          headers.push(missing[m]);
+          map[missing[m]] = startCol + m;
+        }
+      }
+    }
+
     return { headers: headers, map: map };
   }
 

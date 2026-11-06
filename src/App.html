@@ -2004,6 +2004,17 @@
       container.innerHTML = html;
     }
 
+    var pendingCoverDataUrl = '';
+
+    function getEffectiveCoverUrl() {
+      var capaEl = document.getElementById('livro-field-capa-url');
+      var rawInput = capaEl ? capaEl.value.trim() : '';
+      if (pendingCoverDataUrl && (rawInput === '' || rawInput.indexOf('[Imagem') === 0 || rawInput.indexOf('data:image/') === 0)) {
+        return pendingCoverDataUrl;
+      }
+      return rawInput.indexOf('[Imagem') === 0 ? '' : rawInput;
+    }
+
     function updateModalLivroPreview() {
       var previewBox = document.getElementById('modal-livro-preview-box');
       if (!previewBox) return;
@@ -2015,11 +2026,15 @@
       var capaEl = document.getElementById('livro-field-capa-url');
       var favEl = document.getElementById('livro-field-favorito');
 
+      if (capaEl && capaEl.value.trim() !== '' && capaEl.value.trim().indexOf('[Imagem') !== 0 && capaEl.value.trim().indexOf('data:image/') !== 0) {
+        pendingCoverDataUrl = '';
+      }
+
       var titulo = (tituloEl && tituloEl.value ? tituloEl.value : 'Título da Obra').trim();
       var autor = (autorEl && autorEl.value ? autorEl.value : 'Autor').trim();
       var categoria = (catEl && catEl.value ? catEl.value : 'Leitura').trim();
       var cor = (corEl ? corEl.value : '#3b82f6') || '#3b82f6';
-      var capaUrl = (capaEl ? capaEl.value : '').trim();
+      var capaUrl = getEffectiveCoverUrl();
       var isFav = favEl ? favEl.checked : false;
 
       var coverInner = '';
@@ -2078,8 +2093,8 @@
       reader.onload = function (e) {
         var img = new Image();
         img.onload = function () {
-          var maxW = 400;
-          var maxH = 600;
+          var maxW = 240;
+          var maxH = 360;
           var w = img.width;
           var h = img.height;
 
@@ -2099,13 +2114,20 @@
           var ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
 
-          var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          var quality = 0.80;
+          var dataUrl = canvas.toDataURL('image/jpeg', quality);
+          while (dataUrl.length > 38000 && quality > 0.35) {
+            quality -= 0.10;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          pendingCoverDataUrl = dataUrl;
           var urlInput = document.getElementById('livro-field-capa-url');
           if (urlInput) {
-            urlInput.value = dataUrl;
-            updateModalLivroPreview();
+            urlInput.value = '[Imagem carregada: ' + file.name + ']';
           }
-          UI.showToast('Imagem Carregada', 'Capa importada e otimizada!', 'success', 2500);
+          updateModalLivroPreview();
+          UI.showToast('Imagem Carregada', 'Capa otimizada! Clique em "Salvar Livro" para gravar na planilha.', 'success', 3000);
         };
         img.src = e.target.result;
       };
@@ -2113,6 +2135,7 @@
     }
 
     function clearCoverImage() {
+      pendingCoverDataUrl = '';
       var urlInput = document.getElementById('livro-field-capa-url');
       var fileInput = document.getElementById('livro-cover-file');
       if (urlInput) urlInput.value = '';
@@ -2122,6 +2145,7 @@
     }
 
     function openCreateLivroModal() {
+      pendingCoverDataUrl = '';
       document.getElementById('livro-modal-title').textContent = 'Adicionar Livro';
       document.getElementById('livro-field-id').value = '';
       document.getElementById('livro-field-capa-url').value = '';
@@ -2146,9 +2170,17 @@
       var item = state.livrosList.find(function (l) { return l.id === id; });
       if (!item) return;
 
+      var existingCover = String(item.capa_url || '').trim();
+      if (existingCover.indexOf('data:image/') === 0) {
+        pendingCoverDataUrl = existingCover;
+        document.getElementById('livro-field-capa-url').value = '[Imagem de capa salva na planilha]';
+      } else {
+        pendingCoverDataUrl = '';
+        document.getElementById('livro-field-capa-url').value = existingCover;
+      }
+
       document.getElementById('livro-modal-title').textContent = 'Editar Livro';
       document.getElementById('livro-field-id').value = item.id;
-      document.getElementById('livro-field-capa-url').value = item.capa_url || '';
       if (document.getElementById('livro-cover-file')) document.getElementById('livro-cover-file').value = '';
       document.getElementById('livro-field-titulo').value = item.titulo || '';
       document.getElementById('livro-field-autor').value = item.autor || '';
@@ -2173,7 +2205,7 @@
       var autor = document.getElementById('livro-field-autor').value.trim();
       var totalPaginas = Number(document.getElementById('livro-field-paginas').value);
       var pagAtual = Number(document.getElementById('livro-field-pagina-atual').value) || 0;
-      var capaUrl = (document.getElementById('livro-field-capa-url').value || '').trim();
+      var capaUrl = getEffectiveCoverUrl();
 
       if (!titulo || !autor || !totalPaginas) {
         UI.showToast('Campos Obrigatórios', 'Preencha o título, autor e total de páginas.', 'warning');
