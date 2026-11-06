@@ -51,7 +51,9 @@
               pendingRequests.delete(functionName);
 
               // Valida o envelope padrão da aplicação { success: true/false, data, error }
-              if (response && typeof response === 'object' && response.success === false) {
+              if (response === null || response === undefined) {
+                reject(new Error('Resposta vazia do servidor. Tente recarregar a página.'));
+              } else if (response && typeof response === 'object' && response.success === false) {
                 reject(new Error(response.error || 'Ocorreu um erro no servidor.'));
               } else if (response && typeof response === 'object' && response.success === true) {
                 resolve(response.data);

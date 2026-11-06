@@ -82,14 +82,6 @@
           }
         });
       });
-
-      // 3. Badge do banco no topo abre o painel de diagnóstico
-      var topbarBadge = document.getElementById('topbar-db-badge');
-      if (topbarBadge) {
-        topbarBadge.addEventListener('click', function () {
-          switchPane('pane-database');
-        });
-      }
     }
 
     /**
@@ -258,14 +250,7 @@
       ApiClient.call('apiGetDashboardStats')
         .then(function (stats) {
           if (btnElement) UI.setLoading(btnElement, false);
-          if (stats && stats.seedReport && stats.seedReport.seededNewCount > 0) {
-            UI.showToast(
-              'PDI Completo Sincronizado!',
-              stats.seedReport.seededNewCount + ' registros do seu PDI foram salvos e validados na planilha (' + stats.seedReport.totalVerified + ' no total).',
-              'success',
-              6500
-            );
-          }
+          if (!stats) return;
           renderDashboardKPIs(stats.kpis);
           renderDashboardWidgets(stats);
         })

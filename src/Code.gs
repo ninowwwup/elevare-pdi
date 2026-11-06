@@ -8,12 +8,6 @@
  * Entrega a aplicação web responsiva em HTML5.
  */
 function doGet(e) {
-  try {
-    SeedPdi.seedFranciscoPdi(false);
-  } catch (seedErr) {
-    Logger.log('Aviso no seed inicial doGet: ' + seedErr.message);
-  }
-
   var template = HtmlService.createTemplateFromFile('Index');
   
   // Passa dados iniciais seguros de contexto se necessário

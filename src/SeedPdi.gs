@@ -6,7 +6,7 @@
  */
 
 var SeedPdi = (function () {
-  var PROP_SEED_FLAG = 'FRANCISCO_PDI_SEEDED_V1';
+  var PROP_SEED_FLAG = 'FRANCISCO_PDI_SEEDED_V2';
 
   /**
    * Dados estruturados dos 35 registros do PDI de Francisco de Lima Silva.
@@ -734,3 +734,4 @@ var SeedPdi = (function () {
     seedFranciscoPdi: seedFranciscoPdi
   };
 })();
+

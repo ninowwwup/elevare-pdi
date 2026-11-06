@@ -103,9 +103,17 @@ var Security = (function () {
    * @param {string} message Mensagem opcional
    */
   function createSuccessResponse(data, message) {
+    var safeData = data;
+    try {
+      if (data !== undefined) {
+        safeData = JSON.parse(JSON.stringify(data));
+      }
+    } catch (e) {
+      // Fallback caso não seja serializável via JSON
+    }
     return {
       success: true,
-      data: data,
+      data: safeData,
       message: message || 'Operação realizada com sucesso.'
     };
   }

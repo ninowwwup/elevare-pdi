@@ -612,6 +612,30 @@ var Database = (function () {
   }
 
   /**
+   * Converte objetos Date nativos do Google Sheets em strings seguras (YYYY-MM-DD ou ISO 8601)
+   * para evitar que o google.script.run retorne null ao serializar respostas para o frontend.
+   * @param {any} val Valor da célula
+   * @param {string} colName Nome da coluna
+   * @return {any}
+   */
+  function serializeCellValue(val, colName) {
+    if (val === null || val === undefined) return '';
+    if (val instanceof Date || Object.prototype.toString.call(val) === '[object Date]') {
+      if (isNaN(val.getTime())) return '';
+      if (colName === 'created_at' || colName === 'updated_at') {
+        return val.toISOString();
+      }
+      var yyyy = val.getFullYear();
+      var mm = String(val.getMonth() + 1);
+      if (mm.length < 2) mm = '0' + mm;
+      var dd = String(val.getDate());
+      if (dd.length < 2) dd = '0' + dd;
+      return yyyy + '-' + mm + '-' + dd;
+    }
+    return val;
+  }
+
+  /**
    * Obtém um registro pelo ID.
    * @param {string} tableName Nome da tabela
    * @param {string} id ID do registro
@@ -634,7 +658,7 @@ var Database = (function () {
     var obj = {};
     for (var i = 0; i < headerData.headers.length; i++) {
       var colName = headerData.headers[i];
-      obj[colName] = rowValues[i];
+      obj[colName] = serializeCellValue(rowValues[i], colName);
     }
     return obj;
   }
@@ -673,7 +697,7 @@ var Database = (function () {
 
       for (var c = 0; c < headers.length; c++) {
         var hName = headers[c];
-        item[hName] = row[c];
+        item[hName] = serializeCellValue(row[c], hName);
       }
 
       // Aplica filtros se informados
@@ -748,7 +772,8 @@ var Database = (function () {
       var currentValues = sheet.getRange(rowIndex, 1, 1, headerData.headers.length).getValues()[0];
       var currentRecord = {};
       for (var i = 0; i < headerData.headers.length; i++) {
-        currentRecord[headerData.headers[i]] = currentValues[i];
+        var colHeader = headerData.headers[i];
+        currentRecord[colHeader] = serializeCellValue(currentValues[i], colHeader);
       }
 
       // Aplica atualizações
