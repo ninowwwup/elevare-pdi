@@ -647,9 +647,9 @@
             <input type="text" class="filter-search" id="livros-search-input" placeholder="Pesquisar por título, autor ou categoria..." oninput="App.filterLivrosList()" />
             <select class="filter-select" id="livros-filter-estante" onchange="App.filterLivrosList()">
               <option value="todos">Todas as Estantes</option>
-              <option value="lendo_agora">Lendo Agora</option>
-              <option value="quero_ler">Quero Ler</option>
-              <option value="concluidos">Concluídos</option>
+              <option value="lendo">Lendo Agora 📖</option>
+              <option value="quero_ler">Quero Ler 🎯</option>
+              <option value="concluido">Concluídos 🏆</option>
               <option value="favoritos">Favoritos ⭐</option>
             </select>
             <button class="btn btn-secondary btn-sm" onclick="App.loadLivrosList()">Recarregar</button>
@@ -1459,8 +1459,8 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Resumo / Visão Geral</label>
-            <textarea class="form-control" id="livro-field-resumo" rows="2" placeholder="Sinopse ou tema central da leitura..."></textarea>
+            <label class="form-label">Sinopse / Resumo da Obra</label>
+            <textarea class="form-control" id="livro-field-resumo" rows="2" placeholder="Sinopse ou tema central da leitura (exibido ao passar o mouse na Estante 3D)..."></textarea>
           </div>
 
           <div class="form-group">
@@ -1544,6 +1544,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Popover Flutuante de Detalhes do Livro 3D -->
+  <div id="book-hover-popover" class="book-hover-popover" onmouseenter="App.cancelHideBookHoverCard()" onmouseleave="App.scheduleHideBookHoverCard()"></div>
 
   <!-- Container Global de Toasts -->
   <div id="toast-container" class="toast-container"></div>

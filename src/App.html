@@ -103,6 +103,7 @@
       });
 
       // Oculta todos os painéis e exibe o alvo
+      hideBookHoverCardImmediately();
       var panes = document.querySelectorAll('.tab-pane');
       panes.forEach(function (pane) {
         pane.style.display = (pane.id === targetPaneId) ? 'block' : 'none';
@@ -1739,6 +1740,9 @@
           var cor = livro.capa_cor || '#1e1b4b';
           var isFav = Boolean(livro.favorito);
           var hasCover = Boolean(livro.capa_url);
+          var totalPag = Number(livro.total_paginas) || 1;
+          var pagAtual = Number(livro.pagina_atual) || 0;
+          var pct = Math.min(100, Math.round((pagAtual / totalPag) * 100));
 
           var coverInnerHtml = '';
           if (hasCover) {
@@ -1763,7 +1767,7 @@
           }
 
           html += 
-            '<div class="book-3d-wrapper" onclick="App.openEditLivroModal(\'' + livro.id + '\')" title="' + UI.escapeHtml(livro.titulo) + ' — ' + UI.escapeHtml(livro.autor) + '">' +
+            '<div class="book-3d-wrapper" onclick="App.hideBookHoverCardImmediately(); App.openEditLivroModal(\'' + livro.id + '\')" onmouseenter="App.showBookHoverCard(event, \'' + livro.id + '\')" onmouseleave="App.scheduleHideBookHoverCard()">' +
               '<div class="book-3d" style="--book-color: ' + cor + ';">' +
                 '<div class="book-3d-shadow"></div>' +
                 '<div class="book-3d-spine" style="background:' + cor + ';">' +
@@ -1778,6 +1782,15 @@
                   '<div class="book-3d-spine-crease"></div>' +
                   '<div class="book-3d-cover-glare"></div>' +
                   (isFav ? '<div class="book-ribbon"></div>' : '') +
+                  '<div class="book-3d-progress-strip">' +
+                    '<div class="book-3d-progress-pct">' +
+                      '<span>Leitura</span>' +
+                      '<span>' + pct + '%</span>' +
+                    '</div>' +
+                    '<div class="book-3d-progress-mini-track">' +
+                      '<div class="book-3d-progress-mini-fill" style="width:' + pct + '%;"></div>' +
+                    '</div>' +
+                  '</div>' +
                 '</div>' +
               '</div>' +
             '</div>';
@@ -1791,6 +1804,153 @@
       }
 
       stage.innerHTML = html;
+    }
+
+    var bookHoverHideTimer = null;
+
+    function getBookSynopsisFallback(livro) {
+      if (livro.resumo && String(livro.resumo).trim() !== '') {
+        return String(livro.resumo).trim();
+      }
+      var t = String(livro.titulo || '').toLowerCase();
+      if (t.indexOf('quem pensa enriquece') !== -1) {
+        return 'Clássico de Napoleon Hill baseado no estudo de líderes e empreendedores de sucesso, apresentando princípios fundamentais de propósito definido, planejamento organizado, persistência, autogerenciamento e mentalidade orientada a realizações.';
+      }
+      if (t.indexOf('influência mental') !== -1 || t.indexOf('influencia mental') !== -1) {
+        return 'Obra de William Walker Atkinson sobre concentração, domínio mental, magnetismo pessoal e comunicação persuasiva, explorando como desenvolver presença executiva e capacidade de influência positiva no ambiente profissional.';
+      }
+      if (t.indexOf('primeiros 90 dias') !== -1) {
+        return 'Apresenta uma metodologia para profissionais que assumem novas responsabilidades ou posições, abordando como acelerar a adaptação, compreender o ambiente organizacional, estabelecer prioridades e conquistar credibilidade.';
+      }
+      if (t.indexOf('alta performance') !== -1 || t.indexOf('measure what matters') !== -1) {
+        return 'Apresenta a metodologia OKR (Objectives and Key Results), utilizada por organizações para estabelecer objetivos claros, resultados-chave mensuráveis e alinhamento entre equipes.';
+      }
+      if (t.indexOf('storytelling com dados') !== -1) {
+        return 'Apresenta técnicas para transformar dados em narrativas visuais claras e persuasivas. Ensina como construir gráficos, organizar informações e transmitir mensagens relevantes por meio de apresentações e dashboards.';
+      }
+      if (t.indexOf('a meta') !== -1 || t.indexOf('the goal') !== -1) {
+        return 'Apresenta a Teoria das Restrições por meio de uma narrativa empresarial. Demonstra como identificar gargalos, compreender limitações dos processos e melhorar o desempenho global de uma organização.';
+      }
+      return 'Sinopse ainda não cadastrada para esta obra. Clique em "Editar Livro" para adicionar o resumo.';
+    }
+
+    function showBookHoverCard(evt, livroId) {
+      cancelHideBookHoverCard();
+      var popover = document.getElementById('book-hover-popover');
+      if (!popover) return;
+
+      var livro = state.livrosList.find(function (l) { return l.id === livroId; });
+      if (!livro) return;
+
+      var totalPag = Number(livro.total_paginas) || 1;
+      var pagAtual = Number(livro.pagina_atual) || 0;
+      var pct = Math.min(100, Math.round((pagAtual / totalPag) * 100));
+      var cor = livro.capa_cor || '#8b5cf6';
+
+      var statusBadgeClass = 'badge-info';
+      var statusLabel = 'Quero Ler 🎯';
+      if (livro.status === 'lendo') {
+        statusBadgeClass = 'badge-violet';
+        statusLabel = 'Lendo Agora 📖';
+      } else if (livro.status === 'concluido') {
+        statusBadgeClass = 'badge-success';
+        statusLabel = 'Concluído 🏆';
+      } else if (livro.status === 'pausado') {
+        statusBadgeClass = 'badge-warning';
+        statusLabel = 'Pausado ⏸️';
+      }
+
+      var starsNum = Number(livro.avaliacao_pessoal) || 0;
+      var starsHtml = '';
+      if (starsNum > 0) {
+        starsHtml = '<span style="color:#f59e0b; font-size:0.78rem; letter-spacing:1px;">' + '★'.repeat(starsNum) + '☆'.repeat(Math.max(0, 5 - starsNum)) + '</span>';
+      }
+
+      var sinopse = getBookSynopsisFallback(livro);
+      var aprendizados = livro.principais_aprendizados ? String(livro.principais_aprendizados).trim() : '';
+
+      popover.innerHTML =
+        '<div class="book-hover-header">' +
+          '<div style="flex:1; min-width:0;">' +
+            '<div class="book-hover-title">' + UI.escapeHtml(livro.titulo) + (livro.favorito ? ' <span title="Favorito">⭐</span>' : '') + '</div>' +
+            '<div class="book-hover-author">' + UI.escapeHtml(livro.autor) + '</div>' +
+          '</div>' +
+          '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.25rem; flex-shrink:0;">' +
+            '<span class="badge ' + statusBadgeClass + '">' + statusLabel + '</span>' +
+            starsHtml +
+          '</div>' +
+        '</div>' +
+        (livro.categoria ? '<div style="margin-bottom:0.4rem;"><span class="tag-pill" style="margin:0; font-size:0.7rem;">📚 ' + UI.escapeHtml(livro.categoria) + '</span></div>' : '') +
+        '<div class="book-hover-progress-box">' +
+          '<div class="book-hover-progress-top">' +
+            '<span class="book-hover-pct-value">' + pct + '% concluído</span>' +
+            '<span class="book-hover-pages-text">Pág. ' + pagAtual + ' de ' + totalPag + '</span>' +
+          '</div>' +
+          '<div class="progress-bar-bg" style="height:7px;">' +
+            '<div class="progress-bar-fill" style="width:' + pct + '%; background: linear-gradient(90deg, ' + cor + ', var(--accent-violet));"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="book-hover-section-label">📖 Sinopse do Livro</div>' +
+        '<div class="book-hover-synopsis">' + UI.escapeHtml(sinopse) + '</div>' +
+        (aprendizados
+          ? '<div class="book-hover-section-label">💡 Principais Aprendizados</div>' +
+            '<div class="book-hover-learnings">' + UI.escapeHtml(aprendizados) + '</div>'
+          : '') +
+        '<div class="book-hover-footer">' +
+          '<button type="button" class="btn btn-primary btn-sm" style="padding:0.32rem 0.7rem; font-size:0.75rem;" onclick="App.hideBookHoverCardImmediately(); App.openSessaoLeituraModal(\'' + livro.id + '\')">+ Registrar Leitura</button>' +
+          '<button type="button" class="btn btn-secondary btn-sm" style="padding:0.32rem 0.7rem; font-size:0.75rem;" onclick="App.hideBookHoverCardImmediately(); App.openEditLivroModal(\'' + livro.id + '\')">Editar Livro</button>' +
+        '</div>';
+
+      var targetEl = evt && evt.currentTarget ? evt.currentTarget : null;
+      if (targetEl && targetEl.getBoundingClientRect) {
+        var rect = targetEl.getBoundingClientRect();
+        var popWidth = 350;
+        var margin = 14;
+        var leftPos = rect.right + margin;
+
+        if (leftPos + popWidth > window.innerWidth - 12) {
+          leftPos = rect.left - popWidth - margin;
+        }
+        if (leftPos < 12) {
+          leftPos = Math.max(12, Math.round((window.innerWidth - popWidth) / 2));
+        }
+
+        popover.style.left = leftPos + 'px';
+        popover.style.top = Math.max(16, rect.top - 10) + 'px';
+        popover.classList.add('visible');
+
+        // Ajuste fino vertical após renderizar altura real
+        var popHeight = popover.offsetHeight || 280;
+        var finalTop = rect.top - 10;
+        if (finalTop + popHeight > window.innerHeight - 16) {
+          finalTop = Math.max(16, window.innerHeight - popHeight - 16);
+        }
+        popover.style.top = finalTop + 'px';
+      } else {
+        popover.classList.add('visible');
+      }
+    }
+
+    function scheduleHideBookHoverCard() {
+      cancelHideBookHoverCard();
+      bookHoverHideTimer = setTimeout(function () {
+        hideBookHoverCardImmediately();
+      }, 160);
+    }
+
+    function cancelHideBookHoverCard() {
+      if (bookHoverHideTimer) {
+        clearTimeout(bookHoverHideTimer);
+        bookHoverHideTimer = null;
+      }
+    }
+
+    function hideBookHoverCardImmediately() {
+      cancelHideBookHoverCard();
+      var popover = document.getElementById('book-hover-popover');
+      if (popover) {
+        popover.classList.remove('visible');
+      }
     }
 
     function renderLivrosCards(list) {
@@ -2477,6 +2637,10 @@
       updateModalLivroPreview: updateModalLivroPreview,
       handleCoverFileUpload: handleCoverFileUpload,
       clearCoverImage: clearCoverImage,
+      showBookHoverCard: showBookHoverCard,
+      scheduleHideBookHoverCard: scheduleHideBookHoverCard,
+      cancelHideBookHoverCard: cancelHideBookHoverCard,
+      hideBookHoverCardImmediately: hideBookHoverCardImmediately,
       // Exclusão Segura
       requestDeleteRecord: requestDeleteRecord,
       executeDeleteRecord: executeDeleteRecord
