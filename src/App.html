@@ -258,12 +258,40 @@
       ApiClient.call('apiGetDashboardStats')
         .then(function (stats) {
           if (btnElement) UI.setLoading(btnElement, false);
+          if (stats && stats.seedReport && stats.seedReport.seededNewCount > 0) {
+            UI.showToast(
+              'PDI Completo Sincronizado!',
+              stats.seedReport.seededNewCount + ' registros do seu PDI foram salvos e validados na planilha (' + stats.seedReport.totalVerified + ' no total).',
+              'success',
+              6500
+            );
+          }
           renderDashboardKPIs(stats.kpis);
           renderDashboardWidgets(stats);
         })
         .catch(function (err) {
           if (btnElement) UI.setLoading(btnElement, false);
           console.warn('[Dashboard] Erro ao carregar estatísticas:', err.message);
+        });
+    }
+
+    function syncFullPdi(btnElement) {
+      if (btnElement) UI.setLoading(btnElement, true, 'Sincronizando 35 registros...');
+      ApiClient.call('apiSeedFranciscoPdi', true)
+        .then(function (report) {
+          if (btnElement) UI.setLoading(btnElement, false);
+          UI.showToast(
+            'PDI Sincronizado e Validado!',
+            'Total verificado na planilha: ' + (report.totalVerified || 35) + ' registros (Novos inseridos: ' + (report.seededNewCount || 0) + ').',
+            'success',
+            6000
+          );
+          loadDashboardData();
+          checkDatabaseConnection();
+        })
+        .catch(function (err) {
+          if (btnElement) UI.setLoading(btnElement, false);
+          UI.showToast('Erro ao Sincronizar PDI', err.message, 'error');
         });
     }
 
@@ -2411,6 +2439,7 @@
     return {
       init: init,
       switchPane: switchPane,
+      syncFullPdi: syncFullPdi,
       // PDI
       loadPdiList: loadPdiList,
       filterPdiList: filterPdiList,

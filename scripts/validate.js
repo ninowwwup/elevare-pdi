@@ -6,7 +6,8 @@ const gsFiles = [
   'src/Security.gs',
   'src/Validation.gs',
   'src/Database.gs',
-  'src/Modules.gs'
+  'src/Modules.gs',
+  'src/SeedPdi.gs'
 ];
 
 const htmlFiles = [
@@ -58,6 +59,35 @@ try {
   console.log('  [PASS] src/appsscript.json (manifesto valido)');
 } catch (err) {
   console.error('  [FAIL] src/appsscript.json: ' + err.message);
+  hasErrors = true;
+}
+
+// Valida os 35 registros do SeedPdi contra as regras de Security e Validation
+try {
+  const ctx = vm.createContext({});
+  vm.runInContext(fs.readFileSync('src/Security.gs', 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync('src/Validation.gs', 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync('src/SeedPdi.gs', 'utf8'), ctx);
+
+  const ds = ctx.SeedPdi.getPdiDataset();
+  let count = 0;
+
+  ds.planosPdi.forEach(r => { ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('PLANOS_PDI'), r, false); count++; });
+  ds.swot.forEach(r => { ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('SWOT'), r, false); count++; });
+  ds.competencias.forEach(r => { ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('COMPETENCIAS'), r, false); count++; });
+  ds.metasComAcoes.forEach(g => {
+    ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('METAS'), g.meta, false); count++;
+    g.acoes.forEach(a => { ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('ACOES'), a, false); count++; });
+  });
+  ds.feedbacks.forEach(r => { ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('FEEDBACKS'), r, false); count++; });
+  ds.livros.forEach(r => { ctx.Validation.validateRecord(ctx.Security.assertAllowedTable('LIVROS'), r, false); count++; });
+
+  if (count !== 35) {
+    throw new Error('Quantidade de registros no SeedPdi diferente de 35: ' + count);
+  }
+  console.log('  [PASS] SeedPdi: Todos os ' + count + ' registros passaram nas regras de Security e Validation!');
+} catch (err) {
+  console.error('  [FAIL] SeedPdi validacao de dados: ' + err.message);
   hasErrors = true;
 }
 

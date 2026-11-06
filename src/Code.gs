@@ -8,6 +8,12 @@
  * Entrega a aplicação web responsiva em HTML5.
  */
 function doGet(e) {
+  try {
+    SeedPdi.seedFranciscoPdi(false);
+  } catch (seedErr) {
+    Logger.log('Aviso no seed inicial doGet: ' + seedErr.message);
+  }
+
   var template = HtmlService.createTemplateFromFile('Index');
   
   // Passa dados iniciais seguros de contexto se necessário
@@ -78,7 +84,22 @@ function apiPing() {
 function apiSetup(customSpreadsheetId) {
   try {
     var result = Database.setupDatabase(customSpreadsheetId);
-    return Security.createSuccessResponse(result, 'Banco de dados configurado com sucesso.');
+    var seedResult = SeedPdi.seedFranciscoPdi(true);
+    result.seedReport = seedResult;
+    return Security.createSuccessResponse(result, 'Banco de dados configurado e PDI completo sincronizado com sucesso.');
+  } catch (err) {
+    return Security.createErrorResponse(err);
+  }
+}
+
+/**
+ * Sincroniza e valida todos os 35 registros do PDI de Francisco de Lima Silva.
+ * @param {boolean} [forceVerify=true] Se deve validar todas as tabelas mesmo se já sincronizado
+ */
+function apiSeedFranciscoPdi(forceVerify) {
+  try {
+    var report = SeedPdi.seedFranciscoPdi(forceVerify !== false);
+    return Security.createSuccessResponse(report, 'Todos os 35 registros do PDI foram sincronizados e validados com sucesso!');
   } catch (err) {
     return Security.createErrorResponse(err);
   }
@@ -188,6 +209,13 @@ function apiDeleteRecord(tableName, id, softDelete) {
  */
 function apiGetDashboardStats() {
   try {
+    var seedResult = null;
+    try {
+      seedResult = SeedPdi.seedFranciscoPdi(false);
+    } catch (seedErr) {
+      Logger.log('Aviso no auto-seed do PDI: ' + seedErr.message);
+    }
+
     var hoje = Validation.nowISO().split('T')[0];
     
     var metas = Database.listRecords('METAS', { limit: 100 });
@@ -253,7 +281,8 @@ function apiGetDashboardStats() {
       recentFeedbacks: feedbacks.slice(0, 5),
       priorityMetas: metas.filter(function(m) { return m.status !== 'concluida' && m.status !== 'arquivada'; }).slice(0, 5),
       recentLivros: livros.slice(0, 8),
-      competencias: competencias.slice(0, 6)
+      competencias: competencias.slice(0, 6),
+      seedReport: seedResult
     });
   } catch (err) {
     return Security.createErrorResponse(err);

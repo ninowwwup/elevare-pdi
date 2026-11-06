@@ -47,8 +47,9 @@ elevare-pdi/
 │   └── App.html              # Lógica de interface e teste de persistência
 ├── docs/                     # Documentação técnica detalhada
 │   ├── ARCHITECTURE.md       # Desenho de arquitetura e fluxo de dados
-│   ├── DATA_DICTIONARY.md    # Dicionário de dados das 15 abas do banco
-│   └── DEPLOYMENT.md         # Passo a passo de instalação e deploy para iniciantes
+│   ├── DATA_DICTIONARY.md    # Dicionário de dados das abas do banco
+│   ├── DEPLOYMENT.md         # Passo a passo de instalação e deploy para iniciantes
+│   └── GUIA_PREENCHIMENTO_PDI.md # Guia de todos os campos e Prompt Mestre para ChatGPT
 └── tests/                    # Planos de validação
     └── test-plan.md          # Critérios de teste e matriz dos 25 testes
 ```
