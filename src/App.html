@@ -20,10 +20,84 @@
       deleteInfo: { table: '', id: '', name: '' }
     };
 
+    var AUTH_SESSION_KEY = 'elevare_pdi_auth_session_v1';
+    var ACCESS_PIN = '412734';
+
+    function checkInitialAuth() {
+      var overlay = document.getElementById('auth-gate-overlay');
+      var input = document.getElementById('auth-password-input');
+      if (!overlay) return;
+
+      try {
+        if (sessionStorage.getItem(AUTH_SESSION_KEY) === 'unlocked') {
+          overlay.classList.add('unlocked');
+          return;
+        }
+      } catch (e) {}
+
+      overlay.classList.remove('unlocked');
+      if (input) {
+        setTimeout(function () { input.focus(); }, 100);
+      }
+    }
+
+    function submitAuthLogin(evt) {
+      if (evt && evt.preventDefault) evt.preventDefault();
+      var input = document.getElementById('auth-password-input');
+      var errEl = document.getElementById('auth-error-msg');
+      var cardEl = document.getElementById('auth-login-card');
+      var overlay = document.getElementById('auth-gate-overlay');
+      if (!input || !overlay) return;
+
+      var val = String(input.value || '').trim();
+      if (val === ACCESS_PIN) {
+        if (errEl) errEl.textContent = '';
+        try {
+          sessionStorage.setItem(AUTH_SESSION_KEY, 'unlocked');
+        } catch (e) {}
+        overlay.classList.add('unlocked');
+        input.value = '';
+        UI.showToast('Acesso Autorizado', 'Bem-vindo ao Elevare PDI — Francisco de Lima Silva!', 'success', 3500);
+      } else {
+        if (errEl) {
+          errEl.textContent = 'Senha incorreta. Informe o código de acesso autorizado.';
+        }
+        if (cardEl) {
+          cardEl.classList.remove('shake');
+          void cardEl.offsetWidth;
+          cardEl.classList.add('shake');
+        }
+        input.select();
+      }
+    }
+
+    function toggleAuthPasswordVisibility() {
+      var input = document.getElementById('auth-password-input');
+      if (!input) return;
+      input.type = (input.type === 'password') ? 'text' : 'password';
+      input.focus();
+    }
+
+    function lockAuthSession() {
+      try {
+        sessionStorage.removeItem(AUTH_SESSION_KEY);
+      } catch (e) {}
+      var overlay = document.getElementById('auth-gate-overlay');
+      var input = document.getElementById('auth-password-input');
+      var errEl = document.getElementById('auth-error-msg');
+      if (errEl) errEl.textContent = '';
+      if (overlay) overlay.classList.remove('unlocked');
+      if (input) {
+        input.value = '';
+        setTimeout(function () { input.focus(); }, 120);
+      }
+    }
+
     /**
      * Inicialização da aplicação ao carregar a página.
      */
     function init() {
+      checkInitialAuth();
       UI.initTheme();
       setupDynamicGreeting();
       setupNavigation();
@@ -2615,6 +2689,9 @@
 
     return {
       init: init,
+      submitAuthLogin: submitAuthLogin,
+      toggleAuthPasswordVisibility: toggleAuthPasswordVisibility,
+      lockAuthSession: lockAuthSession,
       switchPane: switchPane,
       syncFullPdi: syncFullPdi,
       // PDI

@@ -4,10 +4,62 @@
  */
 
 /**
+ * Mapa de funções públicas permitidas via RPC HTTP (GitHub Pages / API externa) e google.script.run.
+ */
+var RPC_HANDLERS = {
+  apiPing: apiPing,
+  apiSetup: apiSetup,
+  apiSeedFranciscoPdi: apiSeedFranciscoPdi,
+  apiGetDatabaseStatus: apiGetDatabaseStatus,
+  apiGetActiveModules: apiGetActiveModules,
+  apiListRecords: apiListRecords,
+  apiGetRecord: apiGetRecord,
+  apiCreateRecord: apiCreateRecord,
+  apiUpdateRecord: apiUpdateRecord,
+  apiDeleteRecord: apiDeleteRecord,
+  apiGetDashboardStats: apiGetDashboardStats,
+  apiAddAvaliacao: apiAddAvaliacao,
+  apiConvertFeedbackToAction: apiConvertFeedbackToAction,
+  apiConvertSwotToAction: apiConvertSwotToAction,
+  apiUpdateLivroLeitura: apiUpdateLivroLeitura,
+  apiRunPersistenceTest: apiRunPersistenceTest,
+  apiRunFullPersistenceValidation: apiRunFullPersistenceValidation
+};
+
+/**
+ * Executa uma chamada RPC de forma segura e retorna JSON via ContentService.
+ */
+function handleJsonRpc(fnName, args) {
+  try {
+    var handler = RPC_HANDLERS[fnName];
+    if (typeof handler !== 'function') {
+      var errRes = Security.createErrorResponse(new Error('Função RPC não encontrada: ' + fnName));
+      return ContentService.createTextOutput(JSON.stringify(errRes)).setMimeType(ContentService.MimeType.JSON);
+    }
+    var safeArgs = Array.isArray(args) ? args : [];
+    var result = handler.apply(null, safeArgs);
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    var catchRes = Security.createErrorResponse(err);
+    return ContentService.createTextOutput(JSON.stringify(catchRes)).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
  * Ponto de entrada Web App (GET).
- * Entrega a aplicação web responsiva em HTML5.
+ * Suporta tanto entrega da interface HTML5 quanto chamadas RPC via query string (?rpc=...).
  */
 function doGet(e) {
+  if (e && e.parameter && e.parameter.rpc) {
+    var parsedArgs = [];
+    if (e.parameter.args) {
+      try {
+        parsedArgs = JSON.parse(e.parameter.args);
+      } catch (ignore) {}
+    }
+    return handleJsonRpc(e.parameter.rpc, parsedArgs);
+  }
+
   var template = HtmlService.createTemplateFromFile('Index');
   
   // Passa dados iniciais seguros de contexto se necessário
@@ -19,6 +71,22 @@ function doGet(e) {
     .setTitle('Elevare PDI — Personal Development Hub')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * Ponto de entrada Web App (POST).
+ * Permite que a aplicação hospedada no GitHub Pages se comunique diretamente
+ * com a planilha Google Sheets sem problemas de CORS (usando Content-Type: text/plain).
+ */
+function doPost(e) {
+  try {
+    var rawBody = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    var payload = JSON.parse(rawBody);
+    return handleJsonRpc(payload.fn, payload.args || []);
+  } catch (err) {
+    var catchRes = Security.createErrorResponse(err);
+    return ContentService.createTextOutput(JSON.stringify(catchRes)).setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 /**

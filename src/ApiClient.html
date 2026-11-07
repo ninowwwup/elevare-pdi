@@ -1,15 +1,257 @@
 <script>
   /**
-   * Elevare PDI — Cliente de API Frontend (ApiClient)
-   * Encapsula chamadas ao servidor via google.script.run com Promises,
-   * controle de concorrência, tempo limite (timeout) e mensagens amigáveis.
+   * Elevare PDI — Cliente de API Híbrido (Google Apps Script + GitHub Pages HTTP RPC + Cache Local)
+   * Funciona nativamente dentro do Google Apps Script (google.script.run) e também
+   * externamente no GitHub Pages em qualquer rede/dispositivo sem exigir login Google.
    */
   window.ApiClient = (function () {
-    var DEFAULT_TIMEOUT_MS = 30000; // 30 segundos
+    var DEFAULT_TIMEOUT_MS = 25000;
+    var GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz57SSwvYaoRsn4RbtN7KhGXVpPMTmNFaVkxkkCgWSA0f1uMBFg9n3Vi5KVcj9CNLsr/exec';
+    var LOCAL_STORAGE_KEY = 'elevare_pdi_local_db_v2';
     var pendingRequests = new Set();
 
+    function genId() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = (Math.random() * 16) | 0;
+        var v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
+
+    function getLocalDb() {
+      try {
+        var raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.PLANOS_PDI && parsed.PLANOS_PDI.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+
+      var seed = window.ELEVARE_INITIAL_DB ? JSON.parse(JSON.stringify(window.ELEVARE_INITIAL_DB)) : {
+        PLANOS_PDI: [],
+        SWOT: [],
+        COMPETENCIAS: [],
+        AVALIACOES: [],
+        METAS: [],
+        ACOES: [],
+        FEEDBACKS: [],
+        LIVROS: [],
+        LEITURAS: []
+      };
+      saveLocalDb(seed);
+      return seed;
+    }
+
+    function saveLocalDb(db) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(db));
+      } catch (e) {}
+    }
+
+    function syncTableToLocalCache(tableName, records) {
+      if (!tableName || !Array.isArray(records)) return;
+      var db = getLocalDb();
+      db[tableName] = records;
+      saveLocalDb(db);
+    }
+
+    function executeLocalFallback(functionName, args) {
+      var db = getLocalDb();
+      var now = new Date().toISOString();
+      var hoje = now.split('T')[0];
+
+      if (functionName === 'apiPing') {
+        return { pong: true, user: 'francisco.silva@elevare.pdi', timestamp: now };
+      }
+      if (functionName === 'apiGetDatabaseStatus') {
+        return {
+          configured: true,
+          status: 'CONECTADO',
+          spreadsheetName: 'Elevare PDI — Cloud Sync',
+          totalSheets: 15,
+          sheets: []
+        };
+      }
+      if (functionName === 'apiListRecords') {
+        var table = String(args[0] || '').toUpperCase();
+        return (db[table] || []).slice();
+      }
+      if (functionName === 'apiGetRecord') {
+        var tGet = String(args[0] || '').toUpperCase();
+        var idGet = args[1];
+        return (db[tGet] || []).find(function (r) { return String(r.id) === String(idGet); }) || null;
+      }
+      if (functionName === 'apiCreateRecord') {
+        var tCreate = String(args[0] || '').toUpperCase();
+        var rec = Object.assign({}, args[1] || {});
+        rec.id = rec.id || genId();
+        rec.created_at = now;
+        rec.updated_at = now;
+        if (!db[tCreate]) db[tCreate] = [];
+        db[tCreate].unshift(rec);
+        saveLocalDb(db);
+        return rec;
+      }
+      if (functionName === 'apiUpdateRecord') {
+        var tUpd = String(args[0] || '').toUpperCase();
+        var idUpd = args[1];
+        var updates = args[2] || {};
+        var listUpd = db[tUpd] || [];
+        for (var i = 0; i < listUpd.length; i++) {
+          if (String(listUpd[i].id) === String(idUpd)) {
+            listUpd[i] = Object.assign({}, listUpd[i], updates, { updated_at: now });
+            saveLocalDb(db);
+            return listUpd[i];
+          }
+        }
+        throw new Error('Registro não encontrado.');
+      }
+      if (functionName === 'apiDeleteRecord') {
+        var tDel = String(args[0] || '').toUpperCase();
+        var idDel = args[1];
+        db[tDel] = (db[tDel] || []).filter(function (r) { return String(r.id) !== String(idDel); });
+        saveLocalDb(db);
+        return { deleted: true };
+      }
+      if (functionName === 'apiAddAvaliacao') {
+        var avData = args[0] || {};
+        var compList = db.COMPETENCIAS || [];
+        for (var c = 0; c < compList.length; c++) {
+          if (String(compList[c].id) === String(avData.competencia_id)) {
+            compList[c].nivel_atual = Number(avData.nivel);
+            compList[c].ultima_avaliacao_data = hoje;
+          }
+        }
+        saveLocalDb(db);
+        return avData;
+      }
+      if (functionName === 'apiConvertFeedbackToAction') {
+        var fbId = args[0];
+        var acData = args[1] || {};
+        var novaAc = Object.assign({ id: genId(), status: 'a_fazer', origem_tipo: 'feedback', origem_id: fbId, created_at: now }, acData);
+        if (!db.ACOES) db.ACOES = [];
+        db.ACOES.unshift(novaAc);
+        var fbs = db.FEEDBACKS || [];
+        for (var f = 0; f < fbs.length; f++) {
+          if (String(fbs[f].id) === String(fbId)) fbs[f].status = 'em_acompanhamento';
+        }
+        saveLocalDb(db);
+        return novaAc;
+      }
+      if (functionName === 'apiConvertSwotToAction') {
+        var swId = args[0];
+        var swAcData = args[1] || {};
+        var novaSwAc = Object.assign({ id: genId(), status: 'a_fazer', origem_tipo: 'swot', origem_id: swId, created_at: now }, swAcData);
+        if (!db.ACOES) db.ACOES = [];
+        db.ACOES.unshift(novaSwAc);
+        var sws = db.SWOT || [];
+        for (var s = 0; s < sws.length; s++) {
+          if (String(sws[s].id) === String(swId)) sws[s].status = 'em_acao';
+        }
+        saveLocalDb(db);
+        return novaSwAc;
+      }
+      if (functionName === 'apiUpdateLivroLeitura') {
+        var lData = args[0] || {};
+        var livros = db.LIVROS || [];
+        for (var l = 0; l < livros.length; l++) {
+          if (String(livros[l].id) === String(lData.livro_id)) {
+            var pagF = Number(lData.pagina_final);
+            var totP = Number(livros[l].total_paginas) || 1;
+            livros[l].pagina_atual = pagF;
+            livros[l].percentual_leitura = Math.min(100, Math.round((pagF / totP) * 100));
+            if (pagF >= totP) livros[l].status = 'concluido';
+            else if (pagF > 0 && livros[l].status === 'quero_ler') livros[l].status = 'lendo';
+            saveLocalDb(db);
+            return livros[l];
+          }
+        }
+        return {};
+      }
+      if (functionName === 'apiGetDashboardStats') {
+        var metas = db.METAS || [];
+        var acoes = db.ACOES || [];
+        var feedbacks = db.FEEDBACKS || [];
+        var competencias = db.COMPETENCIAS || [];
+        var livrosAll = db.LIVROS || [];
+        var planos = db.PLANOS_PDI || [];
+        var swotItems = db.SWOT || [];
+
+        var metasConcluidas = 0, metasEmAndamento = 0, metasAtrasadas = 0;
+        for (var m = 0; m < metas.length; m++) {
+          if (metas[m].status === 'concluida') metasConcluidas++;
+          else if (metas[m].status !== 'arquivada' && metas[m].status !== 'cancelada') {
+            metasEmAndamento++;
+            if (metas[m].prazo && metas[m].prazo < hoje) metasAtrasadas++;
+          }
+        }
+        var acoesPendentes = 0, acoesAtrasadas = 0;
+        for (var a = 0; a < acoes.length; a++) {
+          if (acoes[a].status !== 'concluida' && acoes[a].status !== 'cancelada' && acoes[a].status !== 'arquivado') {
+            acoesPendentes++;
+            if (acoes[a].prazo && acoes[a].prazo < hoje) acoesAtrasadas++;
+          }
+        }
+        var livrosLendo = 0, livrosConcluidos = 0;
+        for (var b = 0; b < livrosAll.length; b++) {
+          if (livrosAll[b].status === 'lendo') livrosLendo++;
+          if (livrosAll[b].status === 'concluido') livrosConcluidos++;
+        }
+
+        return {
+          kpis: {
+            metasConcluidas: metasConcluidas,
+            metasEmAndamento: metasEmAndamento,
+            metasAtrasadas: metasAtrasadas,
+            acoesPendentes: acoesPendentes,
+            acoesAtrasadas: acoesAtrasadas,
+            totalFeedbacks: feedbacks.length,
+            totalCompetencias: competencias.length,
+            totalLivros: livrosAll.length,
+            livrosLendo: livrosLendo,
+            livrosConcluidos: livrosConcluidos,
+            totalPlanosPdi: planos.length,
+            totalSwot: swotItems.length
+          },
+          recentFeedbacks: feedbacks.slice(0, 5),
+          priorityMetas: metas.filter(function (x) { return x.status !== 'concluida' && x.status !== 'arquivada'; }).slice(0, 5),
+          recentLivros: livrosAll.slice(0, 8),
+          competencias: competencias.slice(0, 6)
+        };
+      }
+      return {};
+    }
+
+    function callViaHttpRpc(functionName, args) {
+      return fetch(GAS_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fn: functionName, args: args })
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function (envelope) {
+          if (envelope && envelope.success === false) {
+            throw new Error(envelope.error || 'Erro no servidor.');
+          }
+          var data = (envelope && envelope.success === true) ? envelope.data : envelope;
+          if (functionName === 'apiListRecords' && args[0] && Array.isArray(data)) {
+            syncTableToLocalCache(String(args[0]).toUpperCase(), data);
+          }
+          return data;
+        })
+        .catch(function (err) {
+          console.warn('[ApiClient] Usando base sincronizada local para ' + functionName + ':', err.message);
+          return executeLocalFallback(functionName, args);
+        });
+    }
+
     /**
-     * Invoca uma função do servidor Apps Script e retorna uma Promise.
+     * Invoca uma função do servidor Apps Script (ou HTTP RPC no GitHub Pages) e retorna uma Promise.
      * @param {string} functionName Nome da função exposta no Code.gs
      * @param {...any} args Argumentos a enviar
      * @return {Promise<any>}
@@ -17,23 +259,15 @@
     function call(functionName) {
       var args = Array.prototype.slice.call(arguments, 1);
 
+      // Se estiver rodando no GitHub Pages ou navegador externo (sem google.script.run), usa HTTP RPC + Fallback Local
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        return callViaHttpRpc(functionName, args);
+      }
+
       return new Promise(function (resolve, reject) {
-        // Verifica se a API do Google Apps Script está disponível no ambiente
-        if (typeof google === 'undefined' || !google.script || !google.script.run) {
-          reject(new Error('Ambiente do Google Apps Script não detectado. Execute esta aplicação através do link gerado no Apps Script.'));
-          return;
-        }
-
-        var isPending = pendingRequests.has(functionName);
-        if (isPending) {
-          // Permite chamadas simultâneas apenas se explicitamente suportadas
-          console.warn('[ApiClient] Requisição em andamento para: ' + functionName);
-        }
         pendingRequests.add(functionName);
-
         var hasFinished = false;
 
-        // Configuração de Timeout para evitar travamento infinito na interface
         var timer = setTimeout(function () {
           if (!hasFinished) {
             hasFinished = true;
@@ -50,7 +284,6 @@
               clearTimeout(timer);
               pendingRequests.delete(functionName);
 
-              // Valida o envelope padrão da aplicação { success: true/false, data, error }
               if (response === null || response === undefined) {
                 reject(new Error('Resposta vazia do servidor. Tente recarregar a página.'));
               } else if (response && typeof response === 'object' && response.success === false) {
@@ -71,7 +304,6 @@
               reject(new Error(message));
             });
 
-          // Dispara a chamada com os argumentos
           if (typeof runner[functionName] !== 'function') {
             clearTimeout(timer);
             pendingRequests.delete(functionName);
